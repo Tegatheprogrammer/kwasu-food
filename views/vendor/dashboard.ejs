@@ -1,0 +1,32 @@
+<%- include('../partials/header') %>
+
+<div class="dashboard">
+    <h1>Vendor Dashboard</h1>
+    <h2><%= vendor.shop_name %></h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Pending Orders</h3>
+            <p class="stat-number"><%= pendingCount %></p>
+            <a href="/vendor/orders" class="btn btn-small">View Orders</a>
+        </div>
+        <div class="stat-card">
+            <h3>Today's Revenue</h3>
+            <p class="stat-number">₦<%= todayRevenue %></p>
+        </div>
+        <div class="stat-card">
+            <h3>Shop Status</h3>
+            <p class="stat-text"><%= vendor.is_open ? 'OPEN' : 'CLOSED' %></p>
+            <form action="/vendor/toggle-shop" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-small <%= vendor.is_open ? 'btn-error' : 'btn-success' %>">
+                    <%= vendor.is_open ? 'Close Shop' : 'Open Shop' %>
+                </button>
+            </form>
+        </div>
+        <div class="stat-card">
+            <h3>Notifications</h3>
+            <p class="stat-number"><%= unreadCount %></p>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

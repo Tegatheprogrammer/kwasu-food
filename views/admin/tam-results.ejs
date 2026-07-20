@@ -1,0 +1,91 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <h1>TAM Survey Results</h1>
+</div>
+
+<% if (responses.length === 0) { %>
+    <div class="empty-state"><h3>No responses yet</h3></div>
+<% } else { %>
+
+<div class="summary-cards">
+    <div class="stat-card">
+        <h3>Perceived Usefulness (PU)</h3>
+        <p class="stat-number"><%= averages.overall_pu %></p>
+        <small>Average / 5</small>
+    </div>
+    <div class="stat-card">
+        <h3>Perceived Ease of Use (PEOU)</h3>
+        <p class="stat-number"><%= averages.overall_peou %></p>
+        <small>Average / 5</small>
+    </div>
+    <div class="stat-card">
+        <h3>Behavioral Intention (BI)</h3>
+        <p class="stat-number"><%= averages.overall_bi %></p>
+        <small>Average / 5</small>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Detailed Averages</h2>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr><th>Construct</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Average</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>PU</strong></td>
+                    <td><%= averages.avg_pu1 %></td>
+                    <td><%= averages.avg_pu2 %></td>
+                    <td><%= averages.avg_pu3 %></td>
+                    <td><%= averages.avg_pu4 %></td>
+                    <td><strong><%= averages.overall_pu %></strong></td>
+                </tr>
+                <tr>
+                    <td><strong>PEOU</strong></td>
+                    <td><%= averages.avg_peou1 %></td>
+                    <td><%= averages.avg_peou2 %></td>
+                    <td><%= averages.avg_peou3 %></td>
+                    <td><%= averages.avg_peou4 %></td>
+                    <td><strong><%= averages.overall_peou %></strong></td>
+                </tr>
+                <tr>
+                    <td><strong>BI</strong></td>
+                    <td><%= averages.avg_bi1 %></td>
+                    <td><%= averages.avg_bi2 %></td>
+                    <td><%= averages.avg_bi3 %></td>
+                    <td>-</td>
+                    <td><strong><%= averages.overall_bi %></strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Individual Responses (<%= responses.length %>)</h2>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr><th>Student</th><th>Matric</th><th>PU Avg</th><th>PEOU Avg</th><th>BI Avg</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+                <% responses.forEach(r => { %>
+                <tr>
+                    <td><%= r.full_name %></td>
+                    <td><%= r.matric_number || '-' %></td>
+                    <td><%= ((r.pu1+r.pu2+r.pu3+r.pu4)/4).toFixed(2) %></td>
+                    <td><%= ((r.peou1+r.peou2+r.peou3+r.peou4)/4).toFixed(2) %></td>
+                    <td><%= ((r.bi1+r.bi2+r.bi3)/3).toFixed(2) %></td>
+                    <td><%= new Date(r.submitted_at).toLocaleDateString() %></td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<% } %>
+
+<%- include('../partials/footer') %>

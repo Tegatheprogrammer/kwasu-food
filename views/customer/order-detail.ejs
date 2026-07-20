@@ -1,0 +1,70 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <h1>Order #<%= order.id %></h1>
+    <span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span>
+</div>
+
+<div class="order-detail-layout">
+    <div class="order-info-card">
+        <h3>Order Details</h3>
+        <p><strong>Vendor:</strong> <%= order.shop_name %></p>
+        <p><strong>Location:</strong> <%= order.location %></p>
+        <p><strong>Vendor Phone:</strong> <%= order.vendor_phone %></p>
+        <p><strong>Delivery Hostel:</strong> <%= order.delivery_hostel %></p>
+        <% if (order.delivery_address) { %><p><strong>Address:</strong> <%= order.delivery_address %></p><% } %>
+        <% if (order.notes) { %><p><strong>Notes:</strong> <%= order.notes %></p><% } %>
+        <p><strong>Ordered:</strong> <%= new Date(order.created_at).toLocaleString() %></p>
+        <p><strong>Last Updated:</strong> <span id="lastUpdated"><%= new Date(order.updated_at).toLocaleString() %></span></p>
+        <div class="status-tracker" id="statusTracker">
+            <% const statuses = ['pending','received','preparing','ready','out_for_delivery','delivered']; %>
+            <% statuses.forEach((s, i) => { %>
+                <div class="status-step <%= statuses.indexOf(order.status) >= i ? 'active' : '' %> <%= order.status === s ? 'current' : '' %>">
+                    <div class="step-dot"></div>
+                    <span><%= s.replace(/_/g, ' ') %></span>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    <div class="order-items-card">
+        <h3>Items Ordered</h3>
+        <div class="order-items-list">
+            <% orderItems.forEach(item => { %>
+            <div class="order-item-row">
+                <span><%= item.name %> x<%= item.quantity %></span>
+                <span>₦<%= item.unit_price * item.quantity %></span>
+            </div>
+            <% }) %>
+        </div>
+        <div class="order-grand-total"><strong>Total: ₦<%= order.total_amount %></strong></div>
+    </div>
+</div>
+
+<script>
+const orderId = <%= order.id %>;
+const statusTracker = document.getElementById('statusTracker');
+const lastUpdated = document.getElementById('lastUpdated');
+const statuses = ['pending','received','preparing','ready','out_for_delivery','delivered'];
+
+function updateStatusDisplay(currentStatus) {
+    const steps = statusTracker.querySelectorAll('.status-step');
+    const currentIndex = statuses.indexOf(currentStatus);
+    steps.forEach((step, i) => {
+        step.classList.toggle('active', i <= currentIndex);
+        step.classList.toggle('current', statuses[i] === currentStatus);
+    });
+}
+
+setInterval(async () => {
+    try {
+        const res = await fetch(`/customer/orders/${orderId}/status`);
+        const data = await res.json();
+        if (data.status) {
+            updateStatusDisplay(data.status);
+            lastUpdated.textContent = new Date(data.updated_at).toLocaleString();
+        }
+    } catch (e) { console.error('Status poll failed', e); }
+}, 10000);
+</script>
+
+<%- include('../partials/footer') %>

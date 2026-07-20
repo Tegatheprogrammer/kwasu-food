@@ -1,0 +1,79 @@
+<%- include('../partials/header') %>
+
+<div class="survey-container">
+    <h1>TAM Survey</h1>
+    <p class="survey-intro">Technology Acceptance Model (TAM) Survey. Please rate your agreement with the following statements. You can only submit once.</p>
+    <form action="/customer/tam-survey" method="POST" class="survey-form">
+        <div class="survey-section">
+            <h3>Perceived Usefulness (PU)</h3>
+            <% const pu = [
+                {id:'pu1', text:'Using KWASU Food System improves my ordering efficiency'},
+                {id:'pu2', text:'Using this system saves me time'},
+                {id:'pu3', text:'This system makes it easier to get food on campus'},
+                {id:'pu4', text:'Overall, this system is useful for my daily needs'}
+            ]; %>
+            <% pu.forEach(item => { %>
+            <div class="likert-item">
+                <p><%= item.text %></p>
+                <div class="likert-scale">
+                    <% for(let i=1; i<=5; i++) { %>
+                    <label class="likert-label">
+                        <input type="radio" name="<%= item.id %>" value="<%= i %>" required>
+                        <span><%= i %></span>
+                        <small><%= i===1 ? 'Strongly Disagree' : i===2 ? 'Disagree' : i===3 ? 'Neutral' : i===4 ? 'Agree' : 'Strongly Agree' %></small>
+                    </label>
+                    <% } %>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <div class="survey-section">
+            <h3>Perceived Ease of Use (PEOU)</h3>
+            <% const peou = [
+                {id:'peou1', text:'Learning to use this system was easy'},
+                {id:'peou2', text:'I find it easy to get the system to do what I want'},
+                {id:'peou3', text:'The system is clear and understandable'},
+                {id:'peou4', text:'Overall, this system is easy to use'}
+            ]; %>
+            <% peou.forEach(item => { %>
+            <div class="likert-item">
+                <p><%= item.text %></p>
+                <div class="likert-scale">
+                    <% for(let i=1; i<=5; i++) { %>
+                    <label class="likert-label">
+                        <input type="radio" name="<%= item.id %>" value="<%= i %>" required>
+                        <span><%= i %></span>
+                        <small><%= i===1 ? 'Strongly Disagree' : i===2 ? 'Disagree' : i===3 ? 'Neutral' : i===4 ? 'Agree' : 'Strongly Agree' %></small>
+                    </label>
+                    <% } %>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <div class="survey-section">
+            <h3>Behavioral Intention (BI)</h3>
+            <% const bi = [
+                {id:'bi1', text:'I intend to continue using this system in the future'},
+                {id:'bi2', text:'I would recommend this system to other students'},
+                {id:'bi3', text:'I plan to use this system frequently'}
+            ]; %>
+            <% bi.forEach(item => { %>
+            <div class="likert-item">
+                <p><%= item.text %></p>
+                <div class="likert-scale">
+                    <% for(let i=1; i<=5; i++) { %>
+                    <label class="likert-label">
+                        <input type="radio" name="<%= item.id %>" value="<%= i %>" required>
+                        <span><%= i %></span>
+                        <small><%= i===1 ? 'Strongly Disagree' : i===2 ? 'Disagree' : i===3 ? 'Neutral' : i===4 ? 'Agree' : 'Strongly Agree' %></small>
+                    </label>
+                    <% } %>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Submit Survey</button>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

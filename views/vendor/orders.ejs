@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+
+<div class="page-header flex-between">
+    <h1>Incoming Orders</h1>
+    <span class="badge badge-info">Auto-refreshes every 15s</span>
+</div>
+
+<% if (orders.length === 0) { %>
+    <div class="empty-state"><h3>No orders yet</h3></div>
+<% } else { %>
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr><th>Order #</th><th>Customer</th><th>Phone</th><th>Amount</th><th>Status</th><th>Date</th><th>Update</th></tr>
+        </thead>
+        <tbody>
+            <% orders.forEach(order => { %>
+            <tr>
+                <td>#<%= order.id %></td>
+                <td><%= order.customer_name %></td>
+                <td><%= order.customer_phone %></td>
+                <td>₦<%= order.total_amount %></td>
+                <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+                <td><%= new Date(order.created_at).toLocaleString() %></td>
+                <td>
+                    <% if (['pending','received','preparing'].includes(order.status)) { %>
+                    <form action="/vendor/orders/<%= order.id %>/status" method="POST" style="display:inline;">
+                        <% let nextStatus = order.status === 'pending' ? 'received' : order.status === 'received' ? 'preparing' : 'ready'; %>
+                        <input type="hidden" name="status" value="<%= nextStatus %>">
+                        <button type="submit" class="btn btn-small btn-accent">Mark <%= nextStatus.replace(/_/g, ' ') %></button>
+                    </form>
+                    <% } else { %><span>-</span><% } %>
+                </td>
+            </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<script>
+setInterval(() => { location.reload(); }, 15000);
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,34 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <h1>My Orders</h1>
+</div>
+
+<% if (orders.length === 0) { %>
+    <div class="empty-state">
+        <h3>No orders yet</h3>
+        <a href="/customer/vendors" class="btn btn-primary">Browse Vendors</a>
+    </div>
+<% } else { %>
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr><th>Order #</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            <% orders.forEach(order => { %>
+            <tr>
+                <td>#<%= order.id %></td>
+                <td><%= order.shop_name %></td>
+                <td>₦<%= order.total_amount %></td>
+                <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+                <td><%= new Date(order.created_at).toLocaleString() %></td>
+                <td><a href="/customer/orders/<%= order.id %>" class="btn btn-small">View</a></td>
+            </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

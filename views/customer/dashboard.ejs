@@ -1,0 +1,52 @@
+<%- include('../partials/header') %>
+
+<div class="dashboard">
+    <h1>Welcome, <%= user.full_name %>!</h1>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Recent Orders</h3>
+            <p class="stat-number"><%= recentOrders.length %></p>
+            <a href="/customer/orders" class="btn btn-small">View All</a>
+        </div>
+        <div class="stat-card">
+            <h3>Notifications</h3>
+            <p class="stat-number"><%= unreadCount %></p>
+            <span class="badge badge-info">Unread</span>
+        </div>
+        <div class="stat-card">
+            <h3>TAM Survey</h3>
+            <p class="stat-text"><%= tamSubmitted ? 'Submitted' : 'Not Submitted' %></p>
+            <% if (!tamSubmitted) { %>
+                <a href="/customer/tam-survey" class="btn btn-small btn-accent">Take Survey</a>
+            <% } %>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Recent Orders</h2>
+        <% if (recentOrders.length === 0) { %>
+            <p class="empty-state">No orders yet. <a href="/customer/vendors">Browse vendors</a> to place your first order!</p>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr><th>Order #</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        <% recentOrders.forEach(order => { %>
+                        <tr>
+                            <td>#<%= order.id %></td>
+                            <td><%= order.shop_name %></td>
+                            <td>₦<%= order.total_amount %></td>
+                            <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+                            <td><%= new Date(order.created_at).toLocaleDateString() %></td>
+                            <td><a href="/customer/orders/<%= order.id %>" class="btn btn-small">View</a></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

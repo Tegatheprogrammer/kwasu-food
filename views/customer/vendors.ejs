@@ -1,0 +1,32 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <h1>Browse Vendors</h1>
+    <p>Discover delicious food from vendors around KWASU campus</p>
+</div>
+
+<div class="vendor-grid">
+    <% if (vendors.length === 0) { %>
+        <div class="empty-state full-width">
+            <h3>No vendors available right now</h3>
+            <p>Check back later!</p>
+        </div>
+    <% } else { %>
+        <% vendors.forEach(vendor => { %>
+        <div class="vendor-card">
+            <div class="vendor-header">
+                <h3><%= vendor.shop_name %></h3>
+                <span class="badge badge-success">Open</span>
+            </div>
+            <p class="vendor-desc"><%= vendor.description || 'Delicious meals available!' %></p>
+            <div class="vendor-meta">
+                <span>📍 <%= vendor.location %></span>
+                <span>📞 <%= vendor.phone || 'N/A' %></span>
+            </div>
+            <a href="/customer/menu/<%= vendor.id %>" class="btn btn-primary btn-block">View Menu</a>
+        </div>
+        <% }) %>
+    <% } %>
+</div>
+
+<%- include('../partials/footer') %>

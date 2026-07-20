@@ -1,0 +1,51 @@
+<%- include('../partials/header') %>
+
+<div class="dashboard">
+    <h1>Admin Dashboard</h1>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Users</h3>
+            <p class="stat-number"><%= totalUsers %></p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Orders</h3>
+            <p class="stat-number"><%= totalOrders %></p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <p class="stat-number">₦<%= totalRevenue %></p>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Users by Role</h2>
+        <div class="role-badges">
+            <% usersByRole.forEach(r => { %>
+                <span class="badge badge-info"><%= r.role %>: <%= r.count %></span>
+            <% }) %>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Recent Orders</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Order #</th><th>Customer</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                    <% recentOrders.forEach(order => { %>
+                    <tr>
+                        <td>#<%= order.id %></td>
+                        <td><%= order.customer_name %></td>
+                        <td><%= order.shop_name %></td>
+                        <td>₦<%= order.total_amount %></td>
+                        <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+                        <td><%= new Date(order.created_at).toLocaleString() %></td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
