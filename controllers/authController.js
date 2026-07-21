@@ -195,19 +195,16 @@ const postForgotPassword = async (req, res) => {
         const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
         // Send email
-        let emailSent = false;
-        try {
-            await sendResetEmail(email, resetUrl);
-            emailSent = true;
-            req.flash('success', 'A password reset link has been sent to your email. Please check your inbox (and spam folder).');
-        } catch (emailError) {
-            console.error('Email send failed:', emailError.message);
-            // Store token in session for display on login page
-            req.flash('info', `Reset link (copy if email fails): ${resetUrl}`);
-            req.flash('success', 'Password reset processed. If email delivery fails, use the link shown below.');
-        }
-
-        res.redirect('/login');
+              // Send email (fire-and-forget, don't block the response)
+              sendResetEmail(email, resetUrl)
+              .then(() => console.log('Reset email sent to:', email))
+              .catch(err => console.error('Email failed (non-blocking):', err.message));
+  
+          // Always show success + the reset link immediately
+          req.flash('success', 'Password reset link generated. Check your email, or use the link below.');
+          req.flash('info', resetUrl);
+  
+          res.redirect('/login');
     } catch (error) {
         console.error('Forgot password error:', error);
         req.flash('error', 'An error occurred. Please try again.');
