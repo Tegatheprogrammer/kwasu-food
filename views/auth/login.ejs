@@ -9,6 +9,11 @@
         <% if (error_msg && error_msg.length > 0) { %>
             <div class="alert alert-error"><%= error_msg %></div>
         <% } %>
+        <% if (info_msg && info_msg.length > 0) { %>
+            <div class="alert alert-info" style="background: #dbeafe; color: #1e40af; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; word-break: break-all;">
+                <strong>Reset Link:</strong> <a href="<%= info_msg %>" style="color: #2563EB;"><%= info_msg %></a>
+            </div>
+        <% } %>
         <form action="/login" method="POST" class="auth-form">
             <div class="form-group">
                 <label>Email Address</label>
@@ -19,7 +24,6 @@
                 <input type="password" name="password" required placeholder="Enter your password">
             </div>
             <button type="submit" class="btn btn-primary btn-block">Login</button>
-            
         </form>
         <p class="auth-link">Don't have an account? <a href="/register">Register here</a></p>
         <p class="auth-link"><a href="/forgot-password">Forgot password?</a></p>

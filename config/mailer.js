@@ -1,36 +1,31 @@
 /**
  * Email Configuration using Nodemailer
- * For production: Use Gmail App Password or a service like SendGrid
  */
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,      // your Gmail address
-        pass: process.env.EMAIL_PASS       // Gmail App Password (NOT your regular password)
-    }
-});
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
-// Verify connection
-transporter.verify((error, success) => {
-    if (error) {
-        console.log(' Email service not configured:', error.message);
-    } else {
-        console.log(' Email service ready');
-    }
-});
+let transporter = null;
 
-/**
- * Send password reset email
- * @param {string} to - Recipient email
- * @param {string} resetUrl - Password reset URL with token
- */
+if (EMAIL_USER && EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: EMAIL_USER,
+            pass: EMAIL_PASS
+        }
+    });
+}
+
 const sendResetEmail = async (to, resetUrl) => {
+    if (!transporter) {
+        throw new Error('Email not configured. Set EMAIL_USER and EMAIL_PASS environment variables.');
+    }
+
     const mailOptions = {
-        from: `"KWASU Food Support" <${process.env.EMAIL_USER}>`,
+        from: `"KWASU Food Support" <${EMAIL_USER}>`,
         to: to,
         subject: 'Password Reset - KWASU Food Ordering System',
         html: `

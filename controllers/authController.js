@@ -152,6 +152,7 @@ const getForgotPassword = (req, res) => {
 };
 
 // POST - Forgot Password (send email with reset link)
+// POST - Forgot Password (send email with reset link)
 const postForgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -194,13 +195,16 @@ const postForgotPassword = async (req, res) => {
         const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
         // Send email
+        let emailSent = false;
         try {
             await sendResetEmail(email, resetUrl);
+            emailSent = true;
             req.flash('success', 'A password reset link has been sent to your email. Please check your inbox (and spam folder).');
         } catch (emailError) {
-            console.error('Email send failed:', emailError);
-            // For development/debugging: show the link
-            req.flash('success', `Email service temporarily unavailable. For admin use only: ${resetUrl}`);
+            console.error('Email send failed:', emailError.message);
+            // Store token in session for display on login page
+            req.flash('info', `Reset link (copy if email fails): ${resetUrl}`);
+            req.flash('success', 'Password reset processed. If email delivery fails, use the link shown below.');
         }
 
         res.redirect('/login');
