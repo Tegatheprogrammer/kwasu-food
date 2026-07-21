@@ -1,9 +1,10 @@
 /**
  * Auth Controller
- * Handles user registration, login, and logout
+ * Handles user registration, login, logout, and password reset
  */
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
+const { sendResetEmail } = require('../config/mailer');
 
 // GET - Login page
 const getLogin = (req, res) => {
@@ -44,7 +45,6 @@ const postLogin = async (req, res) => {
             return res.redirect('/login');
         }
 
-        // Set session
         req.session.user = {
             id: user.id,
             full_name: user.full_name,
@@ -56,7 +56,6 @@ const postLogin = async (req, res) => {
 
         req.flash('success', `Welcome back, ${user.full_name}!`);
 
-        // Redirect based on role
         if (user.role === 'customer') return res.redirect('/customer/dashboard');
         if (user.role === 'vendor') return res.redirect('/vendor/dashboard');
         if (user.role === 'rider') return res.redirect('/rider/dashboard');
@@ -83,7 +82,6 @@ const postRegister = async (req, res) => {
             role, matric_number, phone, hostel, shop_name, location
         } = req.body;
 
-        // Validation
         if (!full_name || !email || !password || !confirm_password || !role) {
             req.flash('error', 'Please fill in all required fields');
             return res.redirect('/register');
@@ -99,7 +97,6 @@ const postRegister = async (req, res) => {
             return res.redirect('/register');
         }
 
-        // Check if email exists
         const [existing] = await db.execute(
             'SELECT id FROM users WHERE email = ?',
             [email]
@@ -110,10 +107,8 @@ const postRegister = async (req, res) => {
             return res.redirect('/register');
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert user
         const [result] = await db.execute(
             `INSERT INTO users (full_name, email, password, role, matric_number, phone, hostel)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -122,7 +117,6 @@ const postRegister = async (req, res) => {
 
         const userId = result.insertId;
 
-        // If vendor, create vendor record
         if (role === 'vendor') {
             await db.execute(
                 `INSERT INTO vendors (user_id, shop_name, location)
@@ -150,10 +144,179 @@ const logout = (req, res) => {
     });
 };
 
+// ==================== FORGOT PASSWORD (PRODUCTION) ====================
+
+// GET - Forgot Password page
+const getForgotPassword = (req, res) => {
+    res.render('auth/forgot-password', { title: 'Forgot Password - KWASU Food' });
+};
+
+// POST - Forgot Password (send email with reset link)
+const postForgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            req.flash('error', 'Please enter your email address');
+            return res.redirect('/forgot-password');
+        }
+
+        const [users] = await db.execute(
+            'SELECT id, email, full_name FROM users WHERE email = ?',
+            [email]
+        );
+
+        // Don't reveal if email exists (security best practice)
+        if (users.length === 0) {
+            req.flash('success', 'If an account exists with that email, a password reset link has been sent.');
+            return res.redirect('/login');
+        }
+
+        // Generate secure token
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+
+        // Delete any existing unused tokens for this user
+        await db.execute(
+            'DELETE FROM password_resets WHERE user_id = ? AND used = 0',
+            [users[0].id]
+        );
+
+        // Store new token
+        await db.execute(
+            'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+            [users[0].id, token, expiresAt]
+        );
+
+        // Build reset URL (uses APP_URL from env, falls back to localhost)
+        const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const resetUrl = `${appUrl}/reset-password?token=${token}`;
+
+        // Send email
+        try {
+            await sendResetEmail(email, resetUrl);
+            req.flash('success', 'A password reset link has been sent to your email. Please check your inbox (and spam folder).');
+        } catch (emailError) {
+            console.error('Email send failed:', emailError);
+            // For development/debugging: show the link
+            req.flash('success', `Email service temporarily unavailable. For admin use only: ${resetUrl}`);
+        }
+
+        res.redirect('/login');
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        req.flash('error', 'An error occurred. Please try again.');
+        res.redirect('/forgot-password');
+    }
+};
+
+// GET - Reset Password page
+const getResetPassword = async (req, res) => {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            req.flash('error', 'Invalid or expired reset link');
+            return res.redirect('/login');
+        }
+
+        const [resets] = await db.execute(
+            'SELECT user_id, expires_at, used FROM password_resets WHERE token = ?',
+            [token]
+        );
+
+        if (resets.length === 0) {
+            req.flash('error', 'Invalid or expired reset link');
+            return res.redirect('/login');
+        }
+
+        if (resets[0].used === 1) {
+            req.flash('error', 'This reset link has already been used');
+            return res.redirect('/login');
+        }
+
+        if (new Date(resets[0].expires_at) < new Date()) {
+            req.flash('error', 'This reset link has expired');
+            return res.redirect('/login');
+        }
+
+        res.render('auth/reset-password', {
+            title: 'Reset Password - KWASU Food',
+            token: token
+        });
+    } catch (error) {
+        console.error('Reset password page error:', error);
+        req.flash('error', 'An error occurred');
+        res.redirect('/login');
+    }
+};
+
+// POST - Reset Password (update password)
+const postResetPassword = async (req, res) => {
+    try {
+        const { token, password, confirm_password } = req.body;
+
+        if (!password || !confirm_password) {
+            req.flash('error', 'Please fill in all fields');
+            return res.redirect(`/reset-password?token=${token}`);
+        }
+
+        if (password !== confirm_password) {
+            req.flash('error', 'Passwords do not match');
+            return res.redirect(`/reset-password?token=${token}`);
+        }
+
+        if (password.length < 6) {
+            req.flash('error', 'Password must be at least 6 characters');
+            return res.redirect(`/reset-password?token=${token}`);
+        }
+
+        const [resets] = await db.execute(
+            'SELECT user_id, expires_at, used FROM password_resets WHERE token = ?',
+            [token]
+        );
+
+        if (resets.length === 0 || resets[0].used === 1) {
+            req.flash('error', 'Invalid or expired reset link');
+            return res.redirect('/login');
+        }
+
+        if (new Date(resets[0].expires_at) < new Date()) {
+            req.flash('error', 'This reset link has expired');
+            return res.redirect('/login');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await db.execute(
+            'UPDATE users SET password = ? WHERE id = ?',
+            [hashedPassword, resets[0].user_id]
+        );
+
+        // Mark token as used
+        await db.execute(
+            'UPDATE password_resets SET used = 1 WHERE token = ?',
+            [token]
+        );
+
+        req.flash('success', 'Password reset successful! Please log in with your new password.');
+        res.redirect('/login');
+    } catch (error) {
+        console.error('Reset password error:', error);
+        req.flash('error', 'An error occurred. Please try again.');
+        res.redirect('/login');
+    }
+};
+
 module.exports = {
     getLogin,
     postLogin,
     getRegister,
     postRegister,
-    logout
+    logout,
+    getForgotPassword,
+    postForgotPassword,
+    getResetPassword,
+    postResetPassword
 };
