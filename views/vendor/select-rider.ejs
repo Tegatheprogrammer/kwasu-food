@@ -1,0 +1,57 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <h1>Select Dispatch Rider</h1>
+</div>
+
+<div class="order-summary-card" style="background: #f0f7ff; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+    <h3>Order #<%= order.id %></h3>
+    <p><strong>Customer:</strong> <%= order.customer_name %> | <%= order.customer_phone %></p>
+    <p><strong>Hostel:</strong> <%= order.customer_hostel %></p>
+    <p><strong>Total:</strong> ₦<%= order.total_amount %></p>
+</div>
+
+<% if (riders.length === 0) { %>
+    <div class="empty-state">
+        <h3>No riders available</h3>
+        <a href="/vendor/orders" class="btn btn-secondary">Back to Orders</a>
+    </div>
+<% } else { %>
+    <form action="/vendor/send-offer/<%= order.id %>" method="POST">
+        <h3>Choose a Rider</h3>
+        <div class="rider-list" style="margin-bottom: 25px;">
+            <% riders.forEach(rider => { %>
+            <label class="rider-card" style="display: block; padding: 15px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.2s;">
+                <input type="radio" name="rider_id" value="<%= rider.id %>" required style="margin-right: 10px;">
+                <strong><%= rider.full_name %></strong>
+                <span class="badge badge-success" style="margin-left: 10px;">Available</span>
+                <br><small style="color: #666;"> <%= rider.phone %> | ✉ <%= rider.email %></small>
+            </label>
+            <% }) %>
+        </div>
+
+        <div class="form-group" style="max-width: 300px; margin-bottom: 25px;">
+            <label><strong>Delivery Fee (₦)</strong></label>
+            <input type="number" name="delivery_fee" value="<%= vendorDeliveryFee %>" min="100" step="50" required 
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            <small style="color: #666;">Default: ₦<%= vendorDeliveryFee %></small>
+        </div>
+
+        <div class="flex-between">
+            <button type="submit" class="btn btn-primary">Send Offer to Rider</button>
+            <a href="/vendor/orders" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+<% } %>
+
+<script>
+document.querySelectorAll('.rider-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.rider-card').forEach(c => c.style.borderColor = '#ddd');
+        this.style.borderColor = '#4CAF50';
+        this.querySelector('input[type="radio"]').checked = true;
+    });
+});
+</script>
+
+<%- include('../partials/footer') %>

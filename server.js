@@ -76,3 +76,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`\uD83C\uDF5C KWASU Food Ordering System running on http://localhost:${PORT}`);
 });
+
+
+app.use(express.static('public'));

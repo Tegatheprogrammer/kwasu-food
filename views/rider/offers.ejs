@@ -1,0 +1,48 @@
+<%- include('../partials/header') %>
+
+<div class="page-header flex-between">
+    <h1>My Delivery Offers</h1>
+    <a href="/rider/dashboard" class="btn btn-small btn-outline">Back to Dashboard</a>
+</div>
+
+<% if (offers.length === 0) { %>
+    <div class="empty-state">
+        <h3>No offers yet</h3>
+        <p>When vendors select you for deliveries, offers will appear here.</p>
+    </div>
+<% } else { %>
+<div class="delivery-cards">
+    <% offers.forEach(offer => { %>
+    <div class="delivery-card">
+        <div class="delivery-header">
+            <h4>Order #<%= offer.order_id %></h4>
+            <% if (offer.status === 'pending') { %>
+                <span class="badge badge-warning">Pending</span>
+            <% } else if (offer.status === 'accepted') { %>
+                <span class="badge badge-success">Accepted</span>
+            <% } else { %>
+                <span class="badge badge-error">Rejected</span>
+            <% } %>
+        </div>
+        <p><strong>Vendor:</strong> <%= offer.shop_name %> (<%= offer.vendor_location %>)</p>
+        <p><strong>Customer:</strong> <%= offer.customer_name %></p>
+        <p><strong>Hostel:</strong> <%= offer.delivery_hostel %></p>
+        <p><strong>Delivery Fee:</strong> <span style="color: #4CAF50; font-weight: bold; font-size: 1.2em;">₦<%= offer.delivery_fee %></span></p>
+        <p><small style="color: #999;">Offered <%= new Date(offer.created_at).toLocaleString() %></small></p>
+        
+        <% if (offer.status === 'pending') { %>
+        <div class="flex-between" style="margin-top: 15px;">
+            <form action="/rider/offers/accept/<%= offer.id %>" method="POST" style="flex: 1; margin-right: 10px;">
+                <button type="submit" class="btn btn-success btn-block">Accept</button>
+            </form>
+            <form action="/rider/offers/reject/<%= offer.id %>" method="POST" style="flex: 1;">
+                <button type="submit" class="btn btn-error btn-block">Reject</button>
+            </form>
+        </div>
+        <% } %>
+    </div>
+    <% }) %>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

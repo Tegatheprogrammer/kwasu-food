@@ -6,7 +6,7 @@
 </div>
 
 <div class="menu-layout">
-    <div class="menu-items">
+    <div class="menu-items" style="flex: 1;">
         <% if (Object.keys(groupedMenu).length === 0) { %>
             <div class="empty-state"><h3>No menu items available</h3></div>
         <% } else { %>
@@ -15,13 +15,44 @@
                 <h2 class="category-title"><%= category %></h2>
                 <div class="menu-grid">
                     <% items.forEach(item => { %>
-                    <div class="menu-card" data-id="<%= item.id %>" data-name="<%= item.name %>" data-price="<%= item.price %>">
+                    <div class="menu-card <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>" 
+                         data-id="<%= item.id %>" data-name="<%= item.name %>" data-price="<%= item.price %>"
+                         style="position: relative; overflow: hidden;">
+                        
+                        <!-- Food Image -->
+                        <div class="food-image" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px 8px 0 0; margin-bottom: 10px;">
+                            <% if (item.image_url) { %>
+                                <img src="<%= item.image_url %>" alt="<%= item.name %>" style="width: 100%; height: 100%; object-fit: cover;">
+                            <% } else { %>
+                                <div style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                    <span style="font-size: 2em;">🍽</span>
+                                </div>
+                            <% } %>
+                        </div>
+
+                        <!-- Stock Status Badge -->
+                        <% if (item.stock_status === 'sold_out') { %>
+                            <span class="badge badge-error" style="position: absolute; top: 10px; right: 10px;">SOLD OUT</span>
+                        <% } else if (item.stock_status === 'almost_sold') { %>
+                            <span class="badge badge-warning" style="position: absolute; top: 10px; right: 10px;">ALMOST SOLD</span>
+                        <% } else if (item.stock_status === 'restocked') { %>
+                            <span class="badge badge-info" style="position: absolute; top: 10px; right: 10px;">RESTOCKED</span>
+                        <% } %>
+
                         <div class="menu-info">
                             <h4><%= item.name %></h4>
                             <p><%= item.description || '' %></p>
                             <span class="menu-price">₦<%= item.price %></span>
                         </div>
-                        <button class="btn btn-accent btn-small" onclick="addToCart(<%= item.id %>, '<%= item.name %>', <%= item.price %>)">Add to Cart</button>
+                        
+                        <% if (item.stock_status !== 'sold_out') { %>
+                            <button class="btn btn-accent btn-small add-cart-btn" 
+        data-id="<%= item.id %>" 
+        data-name="<%= item.name %>" 
+        data-price="<%= item.price %>">Add to Cart</button>
+        <% } else { %>
+                            <button class="btn btn-small" disabled style="opacity: 0.5;">Unavailable</button>
+                        <% } %>
                     </div>
                     <% }) %>
                 </div>
@@ -29,6 +60,7 @@
             <% } %>
         <% } %>
     </div>
+    
     <div class="cart-sidebar">
         <h3>Your Cart</h3>
         <div id="cartItems" class="cart-items"><p class="empty-cart">Cart is empty</p></div>
@@ -66,4 +98,87 @@
     </div>
 </div>
 
+<style>
+.menu-card.sold-out { opacity: 0.6; }
+.menu-card.sold-out .food-image { filter: grayscale(100%); }
+
+</style>
+
+<script>
+    let cart = [];
+    
+    function addToCart(id, name, price) {
+        const existing = cart.find(item => item.id === id);
+        if (existing) {
+            existing.qty++;
+        } else {
+            cart.push({ id, name, price, qty: 1 });
+        }
+        updateCartUI();
+    }
+    
+    function updateCartUI() {
+        const container = document.getElementById('cartItems');
+        const totalEl = document.getElementById('cartTotal');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        
+        if (cart.length === 0) {
+            container.innerHTML = '<p class="empty-cart">Cart is empty</p>';
+            totalEl.textContent = '0';
+            checkoutBtn.disabled = true;
+            return;
+        }
+        
+        let total = 0;
+        container.innerHTML = cart.map(item => {
+            total += item.price * item.qty;
+            return `
+                <div class="cart-item">
+                    <span>${item.name} x${item.qty}</span>
+                    <span>₦${item.price * item.qty}</span>
+                    <button onclick="removeFromCart(${item.id})" class="btn btn-small btn-error">×</button>
+                </div>
+            `;
+        }).join('');
+        
+        totalEl.textContent = total;
+        checkoutBtn.disabled = false;
+    }
+    
+    function removeFromCart(id) {
+        cart = cart.filter(item => item.id !== id);
+        updateCartUI();
+    }
+    
+    function openOrderModal() {
+        const summary = document.getElementById('orderSummary');
+        const totalEl = document.getElementById('summaryTotal');
+        let total = 0;
+        
+        summary.innerHTML = cart.map(item => {
+            total += item.price * item.qty;
+            return `<p>${item.name} x${item.qty} = ₦${item.price * item.qty}</p>`;
+        }).join('');
+        
+        totalEl.textContent = total;
+        document.getElementById('cartInput').value = JSON.stringify(cart.map(item => ({ id: item.id, quantity: item.qty })));
+        document.getElementById('orderModal').style.display = 'block';
+    }
+    
+    function closeOrderModal() {
+        document.getElementById('orderModal').style.display = 'none';
+    }
+    
+    // ADD THIS AT THE END:
+    document.querySelectorAll('.add-cart-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            addToCart(
+                parseInt(this.dataset.id),
+                this.dataset.name,
+                parseFloat(this.dataset.price)
+            );
+        });
+    });
+    </script>
+    
 <%- include('../partials/footer') %>

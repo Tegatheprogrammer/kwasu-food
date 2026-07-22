@@ -1,0 +1,84 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <h1> Search Foods</h1>
+    <p>Find your favorite meals across all vendors</p>
+</div>
+
+<div style="margin-bottom: 30px;">
+    <form action="/customer/search" method="GET" style="display: flex; gap: 10px;">
+        <input type="text" name="q" value="<%= query || '' %>" placeholder="Search for food, snack, drink..." 
+               style="flex: 1; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1em;" required>
+        <button type="submit" class="btn btn-primary" style="padding: 12px 25px;">Search</button>
+        <% if (query) { %>
+            <a href="/customer/search" class="btn btn-outline" style="padding: 12px 20px;">Clear</a>
+        <% } %>
+    </form>
+</div>
+
+<% if (query) { %>
+    <% if (results.length === 0) { %>
+        <div class="empty-state">
+            <h3>No results for "<%= query %>"</h3>
+            <p>Try searching with different keywords.</p>
+        </div>
+    <% } else { %>
+        
+        <% if (vendors.length > 0) { %>
+        <h2 style="margin-bottom: 15px;">Vendors Found</h2>
+        <div class="vendor-grid" style="margin-bottom: 40px;">
+            <% vendors.forEach(vendor => { %>
+            <div class="vendor-card">
+                <div class="vendor-header">
+                    <h3><%= vendor.shop_name %></h3>
+                </div>
+                <p class="vendor-desc">📍 <%= vendor.location %></p>
+                <a href="/customer/menu/<%= vendor.id %>" class="btn btn-primary btn-block">View Menu</a>
+            </div>
+            <% }) %>
+        </div>
+        <% } %>
+
+        <h2 style="margin-bottom: 15px;">Food Items</h2>
+        <div class="menu-grid">
+            <% results.forEach(item => { %>
+            <div class="menu-card" style="position: relative;">
+                <div class="food-image" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px 8px 0 0; margin-bottom: 10px;">
+                    <% if (item.image_url) { %>
+                        <img src="<%= item.image_url %>" alt="<%= item.name %>" style="width: 100%; height: 100%; object-fit: cover;">
+                    <% } else { %>
+                        <div style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 2em;"></span>
+                        </div>
+                    <% } %>
+                </div>
+                
+                <% if (item.stock_status === 'sold_out') { %>
+                    <span class="badge badge-error" style="position: absolute; top: 10px; right: 10px;">SOLD OUT</span>
+                <% } else if (item.stock_status === 'almost_sold') { %>
+                    <span class="badge badge-warning" style="position: absolute; top: 10px; right: 10px;">ALMOST SOLD</span>
+                <% } else if (item.stock_status === 'restocked') { %>
+                    <span class="badge badge-info" style="position: absolute; top: 10px; right: 10px;">RESTOCKED</span>
+                <% } %>
+
+                <div class="menu-info">
+                    <h4><%= item.name %></h4>
+                    <p><%= item.description || '' %></p>
+                    <span class="menu-price">₦<%= item.price %></span>
+                </div>
+                <p style="color: #4CAF50; font-size: 0.9em; margin-bottom: 10px;">
+                    <i>📍 <%= item.shop_name %></i>
+                </p>
+                <a href="/customer/menu/<%= item.vendor_id %>" class="btn btn-primary btn-block btn-small">View Vendor</a>
+            </div>
+            <% }) %>
+        </div>
+    <% } %>
+<% } else { %>
+    <div class="empty-state">
+        <h3>Search for your favorite foods</h3>
+        <p>Type a food name, category, or description above.</p>
+    </div>
+<% } %>
+
+<%- include('../partials/footer') %>

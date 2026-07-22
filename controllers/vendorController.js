@@ -3,7 +3,8 @@
  * Handles vendor-specific features
  */
 const db = require('../config/db');
-
+const path = require('path');
+const fs = require('fs');
 // GET - Vendor Dashboard
 const getDashboard = async (req, res) => {
     try {
@@ -121,11 +122,12 @@ const getMenu = async (req, res) => {
     }
 };
 
+
 // POST - Add Menu Item
 const addMenuItem = async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { name, description, price, category } = req.body;
+        const { name, description, price, category, image_url, stock_status } = req.body;
 
         const [vendors] = await db.execute(
             'SELECT id FROM vendors WHERE user_id = ?',
@@ -138,9 +140,9 @@ const addMenuItem = async (req, res) => {
         }
 
         await db.execute(
-            `INSERT INTO menu_items (vendor_id, name, description, price, category)
-             VALUES (?, ?, ?, ?, ?)`,
-            [vendors[0].id, name, description || null, price, category]
+            `INSERT INTO menu_items (vendor_id, name, description, price, category, image_url, stock_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [vendors[0].id, name, description || null, price, category, image_url || null, stock_status || 'in_stock']
         );
 
         req.flash('success', 'Menu item added successfully');
@@ -152,12 +154,13 @@ const addMenuItem = async (req, res) => {
     }
 };
 
+
 // POST - Update Menu Item
 const updateMenuItem = async (req, res) => {
     try {
         const userId = req.session.user.id;
         const itemId = req.params.id;
-        const { name, description, price, category } = req.body;
+        const { name, description, price, category, image_url, stock_status } = req.body;
 
         const [vendors] = await db.execute(
             'SELECT id FROM vendors WHERE user_id = ?',
@@ -171,9 +174,9 @@ const updateMenuItem = async (req, res) => {
 
         await db.execute(
             `UPDATE menu_items
-             SET name = ?, description = ?, price = ?, category = ?
+             SET name = ?, description = ?, price = ?, category = ?, image_url = ?, stock_status = ?
              WHERE id = ? AND vendor_id = ?`,
-            [name, description || null, price, category, itemId, vendors[0].id]
+            [name, description || null, price, category, image_url || null, stock_status || 'in_stock', itemId, vendors[0].id]
         );
 
         req.flash('success', 'Menu item updated successfully');
@@ -305,6 +308,11 @@ const updateOrderStatus = async (req, res) => {
             [status, orderId, vendors[0].id]
         );
 
+        // If status is 'ready', redirect to rider selection page
+        if (status === 'ready') {
+            return res.redirect(`/vendor/select-rider/${orderId}`);
+        }
+
         // Notify customer
         const [orders] = await db.execute(
             'SELECT customer_id FROM orders WHERE id = ?',
@@ -328,6 +336,128 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
+// GET - Select Rider Page (vendor chooses a rider)
+const getSelectRider = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const orderId = req.params.id;
+
+        const [vendors] = await db.execute(
+            'SELECT * FROM vendors WHERE user_id = ?',
+            [userId]
+        );
+
+        if (vendors.length === 0) {
+            req.flash('error', 'Vendor not found');
+            return res.redirect('/vendor/orders');
+        }
+
+        const vendor = vendors[0];
+
+        const [orders] = await db.execute(
+            `SELECT o.*, u.full_name as customer_name, u.phone as customer_phone, u.hostel as customer_hostel
+             FROM orders o
+             JOIN users u ON o.customer_id = u.id
+             WHERE o.id = ? AND o.vendor_id = ? AND o.status = 'ready'`,
+            [orderId, vendor.id]
+        );
+
+        if (orders.length === 0) {
+            req.flash('error', 'Order not found or not ready for dispatch');
+            return res.redirect('/vendor/orders');
+        }
+
+        const [riders] = await db.execute(
+            `SELECT u.id, u.full_name, u.phone, u.email
+             FROM users u
+             WHERE u.role = 'rider' AND u.is_active = 1
+             ORDER BY u.full_name`
+        );
+
+        res.render('vendor/select-rider', {
+            title: 'Select Rider - KWASU Food',
+            order: orders[0],
+            riders,
+            vendorDeliveryFee: vendor.delivery_fee || 500
+        });
+    } catch (error) {
+        console.error('Select rider error:', error);
+        req.flash('error', 'Failed to load rider selection');
+        res.redirect('/vendor/orders');
+    }
+};
+
+// POST - Send Offer to Rider
+const sendRiderOffer = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const orderId = req.params.id;
+        const { rider_id, delivery_fee } = req.body;
+
+        const [vendors] = await db.execute(
+            'SELECT id FROM vendors WHERE user_id = ?',
+            [userId]
+        );
+
+        if (vendors.length === 0) {
+            req.flash('error', 'Vendor not found');
+            return res.redirect('/vendor/orders');
+        }
+
+        const vendorId = vendors[0].id;
+
+        const [orders] = await db.execute(
+            'SELECT * FROM orders WHERE id = ? AND vendor_id = ? AND status = ?',
+            [orderId, vendorId, 'ready']
+        );
+
+        if (orders.length === 0) {
+            req.flash('error', 'Order not found or not ready');
+            return res.redirect('/vendor/orders');
+        }
+
+        await db.execute(
+            `INSERT INTO rider_offers (order_id, rider_id, vendor_id, delivery_fee, status)
+             VALUES (?, ?, ?, ?, 'pending')`,
+            [orderId, rider_id, vendorId, delivery_fee || 500]
+        );
+
+        await db.execute(
+            `UPDATE orders SET rider_id = ?, delivery_fee = ?, rider_offer_status = 'pending'
+             WHERE id = ?`,
+            [rider_id, delivery_fee || 500, orderId]
+        );
+
+        await db.execute(
+            `INSERT INTO notifications (user_id, message)
+             VALUES (?, ?)`,
+            [rider_id, `New delivery offer! Order #${orderId} - Delivery fee: ₦${delivery_fee || 500}. Check your dashboard.`]
+        );
+
+        req.flash('success', 'Delivery offer sent to rider successfully!');
+        res.redirect('/vendor/orders');
+    } catch (error) {
+        console.error('Send rider offer error:', error);
+        req.flash('error', 'Failed to send rider offer');
+        res.redirect(`/vendor/select-rider/${req.params.id}`);
+    }
+};
+
+// POST - Upload Food Image
+const uploadMenuImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No image uploaded' });
+        }
+
+        const imageUrl = '/uploads/food/' + req.file.filename;
+        res.json({ success: true, imageUrl });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ success: false, error: 'Upload failed' });
+    }
+};
+
 module.exports = {
     getDashboard,
     toggleShop,
@@ -337,5 +467,8 @@ module.exports = {
     toggleMenuItem,
     deleteMenuItem,
     getOrders,
-    updateOrderStatus
+    updateOrderStatus,
+    getSelectRider,
+    sendRiderOffer,
+    uploadMenuImage 
 };

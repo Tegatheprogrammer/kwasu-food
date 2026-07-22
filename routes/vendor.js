@@ -17,9 +17,16 @@ router.post('/menu/add', isVendor, vendorController.addMenuItem);
 router.post('/menu/edit/:id', isVendor, vendorController.updateMenuItem);
 router.post('/menu/toggle/:id', isVendor, vendorController.toggleMenuItem);
 router.post('/menu/delete/:id', isVendor, vendorController.deleteMenuItem);
+const upload = require('../config/multer'); // ADD THIS
 
 // Orders
 router.get('/orders', isVendor, vendorController.getOrders);
 router.post('/orders/:id/status', isVendor, vendorController.updateOrderStatus);
+// ADD THIS - Image upload route
+router.post('/menu/upload-image', isVendor, upload.single('food_image'), vendorController.uploadMenuImage);
+
+// Rider selection (NEW)
+router.get('/select-rider/:id', isVendor, vendorController.getSelectRider);
+router.post('/send-offer/:id', isVendor, vendorController.sendRiderOffer);
 
 module.exports = router;

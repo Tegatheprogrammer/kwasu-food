@@ -5,11 +5,24 @@
     <p>Discover delicious food from vendors around KWASU campus</p>
 </div>
 
+<!-- Search -->
+<div style="margin-bottom: 25px; display: flex; gap: 10px;">
+    <form action="/customer/vendors" method="GET" style="display: flex; gap: 10px; flex: 1;">
+        <input type="text" name="search" value="<%= search || '' %>" placeholder="Search vendors by name or location..." 
+               style="flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px;">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <% if (search) { %>
+            <a href="/customer/vendors" class="btn btn-outline">Clear</a>
+        <% } %>
+    </form>
+    <a href="/customer/search" class="btn btn-accent">Search Foods</a>
+</div>
+
 <div class="vendor-grid">
     <% if (vendors.length === 0) { %>
         <div class="empty-state full-width">
-            <h3>No vendors available right now</h3>
-            <p>Check back later!</p>
+            <h3><%= search ? 'No vendors match "' + search + '"' : 'No vendors available right now' %></h3>
+            <p><%= search ? 'Try a different search term.' : 'Check back later!' %></p>
         </div>
     <% } else { %>
         <% vendors.forEach(vendor => { %>
@@ -22,6 +35,7 @@
             <div class="vendor-meta">
                 <span>📍 <%= vendor.location %></span>
                 <span>📞 <%= vendor.phone || 'N/A' %></span>
+                <% if (vendor.menu_count) { %><span>🍽 <%= vendor.menu_count %> items</span><% } %>
             </div>
             <a href="/customer/menu/<%= vendor.id %>" class="btn btn-primary btn-block">View Menu</a>
         </div>

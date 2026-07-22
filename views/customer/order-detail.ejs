@@ -16,6 +16,17 @@
         <% if (order.notes) { %><p><strong>Notes:</strong> <%= order.notes %></p><% } %>
         <p><strong>Ordered:</strong> <%= new Date(order.created_at).toLocaleString() %></p>
         <p><strong>Last Updated:</strong> <span id="lastUpdated"><%= new Date(order.updated_at).toLocaleString() %></span></p>
+        
+        <% if (order.rider_name) { %>
+            <div style="background: #f0fff0; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <h4 style="margin-bottom: 10px;">🛵 Rider Info</h4>
+                <p><strong>Name:</strong> <%= order.rider_name %></p>
+                <p><strong>Phone:</strong> <%= order.rider_phone || 'N/A' %></p>
+            </div>
+        <% } else { %>
+            <p style="color: #999; margin-top: 15px;"><i>Waiting for rider assignment...</i></p>
+        <% } %>
+
         <div class="status-tracker" id="statusTracker">
             <% const statuses = ['pending','received','preparing','ready','out_for_delivery','delivered']; %>
             <% statuses.forEach((s, i) => { %>
@@ -36,12 +47,26 @@
             </div>
             <% }) %>
         </div>
-        <div class="order-grand-total"><strong>Total: ₦<%= order.total_amount %></strong></div>
+        <div style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px;">
+            <div class="order-item-row">
+                <span>Subtotal</span>
+                <span>₦<%= order.total_amount %></span>
+            </div>
+            <% if (order.delivery_fee > 0) { %>
+            <div class="order-item-row">
+                <span>Delivery Fee</span>
+                <span>₦<%= order.delivery_fee %></span>
+            </div>
+            <% } %>
+        </div>
+        <div class="order-grand-total" style="border-top: 2px solid #333; margin-top: 15px; padding-top: 15px;">
+            <strong>Total: ₦<%= parseFloat(order.total_amount) + parseFloat(order.delivery_fee || 0) %></strong>
+        </div>
     </div>
 </div>
 
 <script>
-const orderId = <%= order.id %>;
+const orderId = parseInt('<%= order.id %>');
 const statusTracker = document.getElementById('statusTracker');
 const lastUpdated = document.getElementById('lastUpdated');
 const statuses = ['pending','received','preparing','ready','out_for_delivery','delivered'];

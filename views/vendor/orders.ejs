@@ -11,7 +11,17 @@
 <div class="table-responsive">
     <table class="table">
         <thead>
-            <tr><th>Order #</th><th>Customer</th><th>Phone</th><th>Amount</th><th>Status</th><th>Date</th><th>Update</th></tr>
+            <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Amount</th>
+                <th>Delivery</th>
+                <th>Status</th>
+                <th>Rider</th>
+                <th>Date</th>
+                <th>Update</th>
+            </tr>
         </thead>
         <tbody>
             <% orders.forEach(order => { %>
@@ -20,7 +30,21 @@
                 <td><%= order.customer_name %></td>
                 <td><%= order.customer_phone %></td>
                 <td>₦<%= order.total_amount %></td>
+                <td>
+                    <% if (order.delivery_fee > 0) { %>
+                        ₦<%= order.delivery_fee %>
+                    <% } else { %>-<% } %>
+                </td>
                 <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+                <td>
+                    <% if (order.rider_offer_status === 'pending') { %>
+                        <span class="badge badge-warning">Pending</span>
+                    <% } else if (order.rider_offer_status === 'accepted') { %>
+                        <span class="badge badge-success">Accepted</span>
+                    <% } else if (order.rider_offer_status === 'rejected') { %>
+                        <span class="badge badge-error">Rejected</span>
+                    <% } else { %>-<% } %>
+                </td>
                 <td><%= new Date(order.created_at).toLocaleString() %></td>
                 <td>
                     <% if (['pending','received','preparing'].includes(order.status)) { %>
@@ -29,6 +53,16 @@
                         <input type="hidden" name="status" value="<%= nextStatus %>">
                         <button type="submit" class="btn btn-small btn-accent">Mark <%= nextStatus.replace(/_/g, ' ') %></button>
                     </form>
+                    <% } else if (order.status === 'ready') { %>
+                        <% if (order.rider_offer_status === 'rejected') { %>
+                            <a href="/vendor/select-rider/<%= order.id %>" class="btn btn-small btn-error">Select New Rider</a>
+                        <% } else if (!order.rider_offer_status) { %>
+                            <a href="/vendor/select-rider/<%= order.id %>" class="btn btn-small btn-primary">Select Rider</a>
+                        <% } else if (order.rider_offer_status === 'pending') { %>
+                            <span class="badge badge-warning">Waiting...</span>
+                        <% } else { %>
+                            <span class="badge badge-success">Assigned</span>
+                        <% } %>
                     <% } else { %><span>-</span><% } %>
                 </td>
             </tr>

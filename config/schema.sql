@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS menu_items (
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50) NOT NULL,
+    image_url VARCHAR(255) DEFAULT NULL,
     is_available TINYINT(1) NOT NULL DEFAULT 1,
+    stock_status ENUM('in_stock','almost_sold','sold_out','restocked') DEFAULT 'in_stock',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE
 );
@@ -53,7 +55,9 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_hostel VARCHAR(50) NOT NULL,
     delivery_address TEXT,
     total_amount DECIMAL(10, 2) NOT NULL,
+    delivery_fee DECIMAL(10, 2) DEFAULT 0.00,
     status ENUM('pending', 'received', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled') NOT NULL DEFAULT 'pending',
+    rider_offer_status ENUM('pending','accepted','rejected') DEFAULT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -101,6 +105,23 @@ CREATE TABLE IF NOT EXISTS tam_responses (
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Rider offers table (vendor selects rider, rider accepts/rejects)
+CREATE TABLE IF NOT EXISTS rider_offers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    rider_id INT NOT NULL,
+    vendor_id INT NOT NULL,
+    delivery_fee DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','accepted','rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (rider_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE
+);
+
+
 
 -- Insert default admin user (password: admin123 - change in production)
 -- Password is hashed with bcrypt: admin123

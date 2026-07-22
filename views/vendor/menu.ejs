@@ -14,17 +14,57 @@
 <div class="table-responsive">
     <table class="table">
         <thead>
-            <tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr>
+            <tr>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Available</th>
+                <th>Actions</th>
+            </tr>
         </thead>
         <tbody>
             <% menuItems.forEach(item => { %>
             <tr>
-                <td><%= item.name %></td>
+                <td>
+                    <% if (item.image_url) { %>
+                        <img src="<%= item.image_url %>" alt="<%= item.name %>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">
+                    <% } else { %>
+                        <div style="width: 50px; height: 50px; background: #eee; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 10px; color: #999;">No img</span>
+                        </div>
+                    <% } %>
+                </td>
+                <td>
+                    <strong><%= item.name %></strong>
+                    <br><small style="color: #999;"><%= item.description || '' %></small>
+                </td>
                 <td><%= item.category %></td>
                 <td>₦<%= item.price %></td>
+                <td>
+                    <% if (item.stock_status === 'in_stock') { %>
+                        <span class="badge badge-success">In Stock</span>
+                    <% } else if (item.stock_status === 'almost_sold') { %>
+                        <span class="badge badge-warning">Almost Sold</span>
+                    <% } else if (item.stock_status === 'sold_out') { %>
+                        <span class="badge badge-error">Sold Out</span>
+                    <% } else if (item.stock_status === 'restocked') { %>
+                        <span class="badge badge-info">Restocked</span>
+                    <% } %>
+                </td>
                 <td><span class="badge <%= item.is_available ? 'badge-success' : 'badge-error' %>"><%= item.is_available ? 'Available' : 'Unavailable' %></span></td>
                 <td class="actions">
-                    <button class="btn btn-small" onclick="editItem(<%= item.id %>, '<%= item.name %>', '<%= item.description %>', <%= item.price %>, '<%= item.category %>')">Edit</button>
+                    <!-- EDIT BUTTON: Uses data attributes, NO inline onclick -->
+                    <button class="btn btn-small edit-btn" 
+                            data-id="<%= item.id %>"
+                            data-name="<%= item.name %>"
+                            data-desc="<%= item.description || '' %>"
+                            data-price="<%= item.price %>"
+                            data-category="<%= item.category %>"
+                            data-image="<%= item.image_url || '' %>"
+                            data-stock="<%= item.stock_status %>">Edit</button>
+                    
                     <form action="/vendor/menu/toggle/<%= item.id %>" method="POST" style="display:inline;">
                         <button type="submit" class="btn btn-small btn-outline"><%= item.is_available ? 'Disable' : 'Enable' %></button>
                     </form>
@@ -39,6 +79,7 @@
 </div>
 <% } %>
 
+<!-- ADD MODAL -->
 <div id="addModal" class="modal" style="display:none;">
     <div class="modal-content">
         <span class="close-btn" onclick="document.getElementById('addModal').style.display='none'">&times;</span>
@@ -48,11 +89,31 @@
             <div class="form-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
             <div class="form-group"><label>Price (₦) *</label><input type="number" name="price" step="0.01" required></div>
             <div class="form-group"><label>Category *</label><input type="text" name="category" required placeholder="e.g. Rice, Swallow, Snacks"></div>
+            
+            <!-- FILE UPLOAD -->
+            <div class="form-group">
+                <label>Food Image</label>
+                <input type="file" id="addFoodImage" accept="image/jpeg,image/png,image/webp">
+                <div id="addPreview" style="margin-top:10px; display:none;">
+                    <img style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #ddd;">
+                </div>
+                <input type="hidden" name="image_url" id="addImageUrl">
+            </div>
+            
+            <div class="form-group"><label>Stock Status</label>
+                <select name="stock_status">
+                    <option value="in_stock" selected>In Stock</option>
+                    <option value="almost_sold">Almost Sold</option>
+                    <option value="sold_out">Sold Out</option>
+                    <option value="restocked">Restocked</option>
+                </select>
+            </div>
             <button type="submit" class="btn btn-primary btn-block">Add Item</button>
         </form>
     </div>
 </div>
 
+<!-- EDIT MODAL -->
 <div id="editModal" class="modal" style="display:none;">
     <div class="modal-content">
         <span class="close-btn" onclick="document.getElementById('editModal').style.display='none'">&times;</span>
@@ -62,19 +123,123 @@
             <div class="form-group"><label>Description</label><textarea name="description" id="editDesc" rows="2"></textarea></div>
             <div class="form-group"><label>Price (₦) *</label><input type="number" name="price" id="editPrice" step="0.01" required></div>
             <div class="form-group"><label>Category *</label><input type="text" name="category" id="editCategory" required></div>
+            
+            <!-- FILE UPLOAD -->
+            <div class="form-group">
+                <label>Food Image</label>
+                <input type="file" id="editFoodImage" accept="image/jpeg,image/png,image/webp">
+                <div id="editPreview" style="margin-top:10px; display:none;">
+                    <img style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #ddd;">
+                </div>
+                <input type="hidden" name="image_url" id="editImageUrl">
+            </div>
+            
+            <div class="form-group"><label>Stock Status</label>
+                <select name="stock_status" id="editStock">
+                    <option value="in_stock">In Stock</option>
+                    <option value="almost_sold">Almost Sold</option>
+                    <option value="sold_out">Sold Out</option>
+                    <option value="restocked">Restocked</option>
+                </select>
+            </div>
             <button type="submit" class="btn btn-primary btn-block">Update Item</button>
         </form>
     </div>
 </div>
 
 <script>
-function editItem(id, name, desc, price, category) {
-    document.getElementById('editForm').action = '/vendor/menu/edit/' + id;
-    document.getElementById('editName').value = name;
-    document.getElementById('editDesc').value = desc || '';
-    document.getElementById('editPrice').value = price;
-    document.getElementById('editCategory').value = category;
-    document.getElementById('editModal').style.display = 'block';
+// ===== EDIT BUTTON CLICK HANDLER =====
+// This attaches to ALL .edit-btn elements
+document.querySelectorAll('.edit-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        // Read data from the button
+        var id = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        var desc = this.getAttribute('data-desc');
+        var price = this.getAttribute('data-price');
+        var category = this.getAttribute('data-category');
+        var image = this.getAttribute('data-image');
+        var stock = this.getAttribute('data-stock');
+
+        // Fill the form
+        document.getElementById('editForm').action = '/vendor/menu/edit/' + id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editDesc').value = desc;
+        document.getElementById('editPrice').value = price;
+        document.getElementById('editCategory').value = category;
+        document.getElementById('editStock').value = stock || 'in_stock';
+        document.getElementById('editImageUrl').value = image;
+
+        // Show image preview if exists
+        var previewDiv = document.getElementById('editPreview');
+        var previewImg = previewDiv.querySelector('img');
+        if (image) {
+            previewImg.src = image;
+            previewDiv.style.display = 'block';
+        } else {
+            previewDiv.style.display = 'none';
+        }
+
+        // Show the modal
+        document.getElementById('editModal').style.display = 'block';
+    });
+});
+
+// ===== IMAGE UPLOAD & PREVIEW =====
+function handleImageUpload(input, previewId, hiddenId) {
+    var previewDiv = document.getElementById(previewId);
+    var previewImg = previewDiv.querySelector('img');
+    var hiddenInput = document.getElementById(hiddenId);
+
+    if (input.files && input.files[0]) {
+        var file = input.files[0];
+
+        // Show local preview first
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewDiv.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to server
+        var formData = new FormData();
+        formData.append('food_image', file);
+
+        fetch('/vendor/menu/upload-image', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                hiddenInput.value = data.imageUrl;
+                previewImg.src = data.imageUrl;
+            } else {
+                alert('Upload failed: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(function(err) {
+            console.error('Upload error:', err);
+            alert('Image upload failed. Please try again.');
+        });
+    }
+}
+
+// Attach upload handlers
+document.getElementById('addFoodImage').addEventListener('change', function() {
+    handleImageUpload(this, 'addPreview', 'addImageUrl');
+});
+
+document.getElementById('editFoodImage').addEventListener('change', function() {
+    handleImageUpload(this, 'editPreview', 'editImageUrl');
+});
+
+// ===== CLOSE MODAL ON OUTSIDE CLICK =====
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
 }
 </script>
 

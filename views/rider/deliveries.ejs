@@ -1,56 +1,37 @@
 <%- include('../partials/header') %>
 
-<div class="page-header">
-    <h1>Deliveries</h1>
+<div class="page-header flex-between">
+    <h1>My Deliveries</h1>
+    <a href="/rider/dashboard" class="btn btn-small btn-outline">Back to Dashboard</a>
 </div>
 
-<div class="deliveries-layout">
-    <div class="section">
-        <h2>Available for Pickup</h2>
-        <% if (available.length === 0) { %>
-            <p class="empty-state">No available deliveries right now.</p>
+<% if (deliveries.length === 0) { %>
+    <div class="empty-state">
+        <h3>No active deliveries</h3>
+        <p>Accept offers from vendors to start delivering.</p>
+    </div>
+<% } else { %>
+<div class="delivery-cards">
+    <% deliveries.forEach(order => { %>
+    <div class="delivery-card">
+        <div class="delivery-header">
+            <h4>Order #<%= order.id %></h4>
+            <span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span>
+        </div>
+        <p><strong>From:</strong> <%= order.shop_name %> (<%= order.vendor_location %>)</p>
+        <p><strong>To:</strong> <%= order.delivery_hostel %></p>
+        <p><strong>Customer:</strong> <%= order.customer_name %> - <%= order.customer_phone %></p>
+        <p><strong>Delivery Fee:</strong> <span style="color: #4CAF50; font-weight: bold;">₦<%= order.delivery_fee %></span></p>
+        <% if (order.status === 'out_for_delivery') { %>
+        <form action="/rider/deliveries/<%= order.id %>/delivered" method="POST">
+            <button type="submit" class="btn btn-success btn-block">Mark Delivered</button>
+        </form>
         <% } else { %>
-            <div class="delivery-cards">
-                <% available.forEach(order => { %>
-                <div class="delivery-card">
-                    <h4>Order #<%= order.id %></h4>
-                    <p><strong>From:</strong> <%= order.shop_name %> (<%= order.vendor_location %>)</p>
-                    <p><strong>To:</strong> <%= order.delivery_hostel %></p>
-                    <p><strong>Customer:</strong> <%= order.customer_name %> - <%= order.customer_phone %></p>
-                    <p><strong>Amount:</strong> ₦<%= order.total_amount %></p>
-                    <form action="/rider/deliveries/<%= order.id %>/accept" method="POST">
-                        <button type="submit" class="btn btn-primary btn-block">Accept Delivery</button>
-                    </form>
-                </div>
-                <% }) %>
-            </div>
+            <span class="badge badge-warning">Waiting for pickup</span>
         <% } %>
     </div>
-    <div class="section">
-        <h2>My Active Deliveries</h2>
-        <% if (myDeliveries.length === 0) { %>
-            <p class="empty-state">You have no active deliveries.</p>
-        <% } else { %>
-            <div class="delivery-cards">
-                <% myDeliveries.forEach(order => { %>
-                <div class="delivery-card">
-                    <div class="delivery-header">
-                        <h4>Order #<%= order.id %></h4>
-                        <span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span>
-                    </div>
-                    <p><strong>From:</strong> <%= order.shop_name %></p>
-                    <p><strong>To:</strong> <%= order.delivery_hostel %></p>
-                    <p><strong>Customer:</strong> <%= order.customer_name %> - <%= order.customer_phone %></p>
-                    <% if (order.status === 'out_for_delivery') { %>
-                    <form action="/rider/deliveries/<%= order.id %>/delivered" method="POST">
-                        <button type="submit" class="btn btn-success btn-block">Mark Delivered</button>
-                    </form>
-                    <% } %>
-                </div>
-                <% }) %>
-            </div>
-        <% } %>
-    </div>
+    <% }) %>
 </div>
+<% } %>
 
 <%- include('../partials/footer') %>

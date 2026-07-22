@@ -10,10 +10,51 @@
             <a href="/rider/deliveries" class="btn btn-small">View All</a>
         </div>
         <div class="stat-card">
-            <h3>Completed Today</h3>
-            <p class="stat-number"><%= completedToday %></p>
+            <h3>Pending Offers</h3>
+            <p class="stat-number"><%= offers.length %></p>
+            <a href="/rider/offers" class="btn btn-small">View All</a>
+        </div>
+        <div class="stat-card">
+            <h3>Completed</h3>
+            <p class="stat-number"><%= completedCount %></p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Earnings</h3>
+            <p class="stat-number">₦<%= totalEarnings %></p>
         </div>
     </div>
+
+    <% if (offers.length > 0) { %>
+    <div class="section">
+        <h2>Pending Offers</h2>
+        <div class="delivery-cards">
+            <% offers.slice(0, 3).forEach(offer => { %>
+            <div class="delivery-card">
+                <div class="delivery-header">
+                    <h4>Order #<%= offer.order_id %></h4>
+                    <span class="badge badge-warning">Pending</span>
+                </div>
+                <p><strong>From:</strong> <%= offer.shop_name %> (<%= offer.vendor_location %>)</p>
+                <p><strong>To:</strong> <%= offer.delivery_hostel %></p>
+                <p><strong>Customer:</strong> <%= offer.customer_name %></p>
+                <p><strong>Delivery Fee:</strong> <span style="color: #4CAF50; font-weight: bold; font-size: 1.2em;">₦<%= offer.delivery_fee %></span></p>
+                <div class="flex-between" style="margin-top: 15px;">
+                    <form action="/rider/offers/accept/<%= offer.id %>" method="POST" style="flex: 1; margin-right: 10px;">
+                        <button type="submit" class="btn btn-success btn-block">Accept</button>
+                    </form>
+                    <form action="/rider/offers/reject/<%= offer.id %>" method="POST" style="flex: 1;">
+                        <button type="submit" class="btn btn-error btn-block">Reject</button>
+                    </form>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+        <% if (offers.length > 3) { %>
+            <a href="/rider/offers" class="btn btn-outline" style="margin-top: 15px;">+ <%= offers.length - 3 %> more offers</a>
+        <% } %>
+    </div>
+    <% } %>
+
     <% if (assigned.length > 0) { %>
     <div class="section">
         <h2>Current Deliveries</h2>
@@ -27,6 +68,7 @@
                 <p><strong>From:</strong> <%= order.shop_name %> (<%= order.vendor_location %>)</p>
                 <p><strong>To:</strong> <%= order.delivery_hostel %></p>
                 <p><strong>Customer:</strong> <%= order.customer_name %> - <%= order.customer_phone %></p>
+                <p><strong>Fee:</strong> ₦<%= order.delivery_fee %></p>
                 <% if (order.status === 'out_for_delivery') { %>
                 <form action="/rider/deliveries/<%= order.id %>/delivered" method="POST">
                     <button type="submit" class="btn btn-success btn-block">Mark Delivered</button>

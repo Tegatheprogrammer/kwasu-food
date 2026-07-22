@@ -13,7 +13,7 @@
 <div class="table-responsive">
     <table class="table">
         <thead>
-            <tr><th>Order #</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th></tr>
+            <tr><th>Order #</th><th>Vendor</th><th>Items</th><th>Delivery</th><th>Total</th><th>Status</th><th>Date</th><th>Action</th></tr>
         </thead>
         <tbody>
             <% orders.forEach(order => { %>
@@ -21,6 +21,12 @@
                 <td>#<%= order.id %></td>
                 <td><%= order.shop_name %></td>
                 <td>₦<%= order.total_amount %></td>
+                <td>
+                    <% if (order.delivery_fee > 0) { %>
+                        ₦<%= order.delivery_fee %>
+                    <% } else { %>-<% } %>
+                </td>
+                <td><strong>₦<%= parseFloat(order.total_amount) + parseFloat(order.delivery_fee || 0) %></strong></td>
                 <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
                 <td><%= new Date(order.created_at).toLocaleString() %></td>
                 <td><a href="/customer/orders/<%= order.id %>" class="btn btn-small">View</a></td>

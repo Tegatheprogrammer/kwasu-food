@@ -43,19 +43,28 @@ const getDashboard = async (req, res) => {
     }
 };
 
-// GET - Browse Vendors
+// GET - Browse Vendors (with search)
 const getVendors = async (req, res) => {
     try {
-        const [vendors] = await db.execute(
-            `SELECT v.*, u.phone FROM vendors v
-             JOIN users u ON v.user_id = u.id
-             WHERE v.is_open = 1 AND u.is_active = 1
-             ORDER BY v.shop_name`
-        );
+        const { search } = req.query;
+        let query = `SELECT v.*, u.phone FROM vendors v
+                     JOIN users u ON v.user_id = u.id
+                     WHERE v.is_open = 1 AND u.is_active = 1`;
+        let params = [];
+
+        if (search && search.trim()) {
+            query += ` AND (v.shop_name LIKE ? OR v.location LIKE ?)`;
+            params.push(`%${search.trim()}%`, `%${search.trim()}%`);
+        }
+
+        query += ` ORDER BY v.shop_name`;
+
+        const [vendors] = await db.execute(query, params);
 
         res.render('customer/vendors', {
             title: 'Browse Vendors - KWASU Food',
-            vendors
+            vendors,
+            search: search || ''
         });
     } catch (error) {
         console.error('Vendors error:', error);
@@ -63,7 +72,6 @@ const getVendors = async (req, res) => {
         res.redirect('/customer/dashboard');
     }
 };
-
 // GET - View Vendor Menu
 const getMenu = async (req, res) => {
     try {
@@ -336,6 +344,58 @@ const postTamSurvey = async (req, res) => {
     }
 };
 
+
+// GET - Search Foods Across All Vendors
+const searchFoods = async (req, res) => {
+    try {
+        const { q } = req.query;
+        
+        if (!q || !q.trim()) {
+            return res.render('customer/search', {
+                title: 'Search Foods - KWASU Food',
+                results: [],
+                query: '',
+                vendors: []
+            });
+        }
+
+        const searchTerm = `%${q.trim()}%`;
+
+        const [results] = await db.execute(
+            `SELECT m.*, v.shop_name, v.id as vendor_id, v.location
+             FROM menu_items m
+             JOIN vendors v ON m.vendor_id = v.id
+             WHERE m.is_available = 1 AND v.is_open = 1
+             AND (m.name LIKE ? OR m.description LIKE ? OR m.category LIKE ?)
+             ORDER BY v.shop_name, m.name`,
+            [searchTerm, searchTerm, searchTerm]
+        );
+
+        const vendorIds = [...new Set(results.map(r => r.vendor_id))];
+        let vendors = [];
+        if (vendorIds.length > 0) {
+            const placeholders = vendorIds.map(() => '?').join(',');
+            const [vendorData] = await db.execute(
+                `SELECT id, shop_name, location FROM vendors WHERE id IN (${placeholders})`,
+                vendorIds
+            );
+            vendors = vendorData;
+        }
+
+        res.render('customer/search', {
+            title: `Search: ${q} - KWASU Food`,
+            results,
+            query: q,
+            vendors
+        });
+    } catch (error) {
+        console.error('Search foods error:', error);
+        req.flash('error', 'Search failed');
+        res.redirect('/customer/vendors');
+    }
+};
+
+
 module.exports = {
     getDashboard,
     getVendors,
@@ -345,5 +405,6 @@ module.exports = {
     getOrderDetail,
     getOrderStatus,
     getTamSurvey,
-    postTamSurvey
+    postTamSurvey,
+    searchFoods
 };

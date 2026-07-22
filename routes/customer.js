@@ -24,4 +24,6 @@ router.get('/orders/:id/status', isCustomer, customerController.getOrderStatus);
 router.get('/tam-survey', isCustomer, customerController.getTamSurvey);
 router.post('/tam-survey', isCustomer, customerController.postTamSurvey);
 
+// Search foods across all vendors (NEW)
+router.get('/search', isCustomer, customerController.searchFoods);
 module.exports = router;
