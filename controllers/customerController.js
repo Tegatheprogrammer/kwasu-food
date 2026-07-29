@@ -69,7 +69,11 @@ const getVendors = async (req, res) => {
     } catch (error) {
         console.error('Vendors error:', error);
         req.flash('error', 'Failed to load vendors');
-        res.redirect('/customer/dashboard');
+        res.render('customer/vendors', {
+            title: 'Browse Vendors - KWASU Food',
+            vendors: [],
+            search: req.query.search || ''
+        });
     }
 };
 // GET - View Vendor Menu

@@ -5,17 +5,17 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controllers/customerController');
-const { isCustomer } = require('../middleware/auth');
+const { isCustomer, requireCustomerForOrder } = require('../middleware/auth');
 
 // Dashboard
 router.get('/dashboard', isCustomer, customerController.getDashboard);
 
-// Vendors & Menu
-router.get('/vendors', isCustomer, customerController.getVendors);
-router.get('/menu/:id', isCustomer, customerController.getMenu);
+// Vendors & Menu - open to everyone so visitors can browse before signing up
+router.get('/vendors', customerController.getVendors);
+router.get('/menu/:id', customerController.getMenu);
 
-// Orders
-router.post('/place-order', isCustomer, customerController.placeOrder);
+// Orders - placing an order requires a customer account
+router.post('/place-order', requireCustomerForOrder, customerController.placeOrder);
 router.get('/orders', isCustomer, customerController.getOrders);
 router.get('/orders/:id', isCustomer, customerController.getOrderDetail);
 router.get('/orders/:id/status', isCustomer, customerController.getOrderStatus);
@@ -24,6 +24,6 @@ router.get('/orders/:id/status', isCustomer, customerController.getOrderStatus);
 router.get('/tam-survey', isCustomer, customerController.getTamSurvey);
 router.post('/tam-survey', isCustomer, customerController.postTamSurvey);
 
-// Search foods across all vendors (NEW)
-router.get('/search', isCustomer, customerController.searchFoods);
+// Search foods across all vendors - open to everyone
+router.get('/search', customerController.searchFoods);
 module.exports = router;
