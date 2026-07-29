@@ -6,59 +6,63 @@
 </div>
 
 <form action="/customer/search" method="GET" class="search-bar">
-    <input type="text" name="q" value="<%= query || '' %>" placeholder="Search for food, snack, drink..." required>
+    <input type="text" name="q" value="<%= query || '' %>" placeholder="Search for food, snack, drink...">
     <button type="submit" class="btn btn-primary">Search</button>
     <% if (query) { %>
         <a href="/customer/search" class="btn btn-outline">Clear</a>
     <% } %>
 </form>
 
-<% if (query) { %>
-    <% if (results.length === 0) { %>
-        <div class="empty-state">
-            <h3>No results for "<%= query %>"</h3>
-            <p>Try searching with different keywords.</p>
-        </div>
-    <% } else { %>
-        <div class="food-list">
-            <% results.forEach(item => { %>
-            <% const images = item.images && item.images.length ? item.images : null; %>
-            <div class="food-row <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>">
-                <div class="food-row-content">
-                    <h4><%= item.name %></h4>
-                    <a href="/customer/menu/<%= item.vendor_id %>" class="vendor-tag">🍴 <%= item.shop_name %></a>
-                    <% if (item.description) { %><p><%= item.description %></p><% } %>
-                    <div class="food-row-meta">
-                        <span class="menu-price">₦<%= item.price %></span>
-                        <% if (item.stock_status === 'sold_out') { %>
-                            <span class="badge badge-error">Sold out</span>
-                        <% } else if (item.stock_status === 'almost_sold') { %>
-                            <span class="badge badge-warning">Almost sold</span>
-                        <% } else if (item.stock_status === 'restocked') { %>
-                            <span class="badge badge-info">Restocked</span>
-                        <% } %>
-                    </div>
-                </div>
-                <div class="food-row-media">
-                    <% if (images) { %>
-                        <button type="button" class="food-row-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
-                            <img src="<%= images[0] %>" alt="<%= item.name %>">
-                            <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
-                        </button>
-                    <% } else { %>
-                        <a href="/customer/menu/<%= item.vendor_id %>" class="food-row-image">
-                            <div class="food-image-placeholder"><span>🍽</span></div>
-                        </a>
-                    <% } %>
+<% if (results.length === 0) { %>
+    <div class="empty-state">
+        <h3><%= query ? `No results for "${query}"` : 'No foods available right now' %></h3>
+        <p><%= query ? 'Try searching with different keywords.' : 'Check back later!' %></p>
+    </div>
+<% } else { %>
+    <% const categories = [...new Set(results.map(item => item.category))]; %>
+    <% if (categories.length > 1) { %>
+    <div class="category-tabs" id="categoryTabs">
+        <button type="button" class="category-tab active" data-category="all">All</button>
+        <% categories.forEach(cat => { %>
+            <button type="button" class="category-tab" data-category="<%= cat %>"><%= cat %></button>
+        <% }) %>
+    </div>
+    <% } %>
+
+    <div class="food-grid" id="foodGrid">
+        <% results.forEach(item => { %>
+        <% const images = item.images && item.images.length ? item.images : null; %>
+        <div class="food-card <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>" data-category="<%= item.category %>">
+            <div class="food-card-media">
+                <% if (images) { %>
+                    <button type="button" class="food-card-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
+                        <img src="<%= images[0] %>" alt="<%= item.name %>">
+                        <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
+                    </button>
+                <% } else { %>
+                    <a href="/customer/menu/<%= item.vendor_id %>" class="food-card-image">
+                        <div class="food-image-placeholder"><span>🍽</span></div>
+                    </a>
+                <% } %>
+
+                <% if (item.stock_status === 'sold_out') { %>
+                    <span class="badge badge-error" style="position: absolute; top: 8px; left: 8px;">SOLD OUT</span>
+                <% } else if (item.stock_status === 'almost_sold') { %>
+                    <span class="badge badge-warning" style="position: absolute; top: 8px; left: 8px;">ALMOST SOLD</span>
+                <% } else if (item.stock_status === 'restocked') { %>
+                    <span class="badge badge-info" style="position: absolute; top: 8px; left: 8px;">RESTOCKED</span>
+                <% } %>
+            </div>
+            <div class="food-card-body">
+                <h4><%= item.name %></h4>
+                <a href="/customer/menu/<%= item.vendor_id %>" class="vendor-tag">🍴 <%= item.shop_name %></a>
+                <% if (item.description) { %><p><%= item.description %></p><% } %>
+                <div class="food-card-footer">
+                    <span class="menu-price">₦<%= item.price %></span>
                 </div>
             </div>
-            <% }) %>
         </div>
-    <% } %>
-<% } else { %>
-    <div class="empty-state">
-        <h3>Search for your favorite foods</h3>
-        <p>Type a food name, category, or description above.</p>
+        <% }) %>
     </div>
 <% } %>
 
@@ -77,6 +81,20 @@
 </div>
 
 <script>
+    // ===== Category filter tabs =====
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const category = this.dataset.category;
+            document.querySelectorAll('.food-card').forEach(card => {
+                const matches = category === 'all' || card.dataset.category === category;
+                card.classList.toggle('hidden-by-filter', !matches);
+            });
+        });
+    });
+
+    // ===== Photo gallery lightbox =====
     let galleryImages = [];
     let galleryIndex = 0;
 

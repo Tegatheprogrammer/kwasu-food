@@ -63,6 +63,7 @@ function updateCartUI() {
     const cartTotalEl = document.getElementById('cartTotal');
     const checkoutBtn = document.getElementById('checkoutBtn');
     const cartInput = document.getElementById('cartInput');
+    const cartInputDesktop = document.getElementById('cartInputDesktop');
 
     if (!cartItemsEl) return;
 
@@ -90,6 +91,7 @@ function updateCartUI() {
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     if (cartTotalEl) cartTotalEl.textContent = total;
     if (cartInput) cartInput.value = JSON.stringify(cart);
+    if (cartInputDesktop) cartInputDesktop.value = JSON.stringify(cart);
 
     const mobileBar = document.getElementById('mobileCartBar');
     const mobileSummary = document.getElementById('mobileCartSummary');
@@ -141,9 +143,11 @@ document.addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', updateCartUI);
 
 // Clear cart after successful order placement
-const orderForm = document.getElementById('orderForm');
-if (orderForm) {
-    orderForm.addEventListener('submit', () => {
-        localStorage.removeItem('kwasu_cart');
-    });
-}
+['orderForm', 'desktopOrderForm'].forEach(id => {
+    const form = document.getElementById(id);
+    if (form) {
+        form.addEventListener('submit', () => {
+            localStorage.removeItem('kwasu_cart');
+        });
+    }
+});

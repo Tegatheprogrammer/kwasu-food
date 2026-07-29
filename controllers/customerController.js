@@ -376,33 +376,37 @@ const postTamSurvey = async (req, res) => {
 const searchFoods = async (req, res) => {
     try {
         const { q } = req.query;
-        
-        if (!q || !q.trim()) {
-            return res.render('customer/search', {
-                title: 'Search Foods - KWASU Food',
-                results: [],
-                query: ''
-            });
+        const trimmed = (q || '').trim();
+
+        let results;
+        if (!trimmed) {
+            // No query yet - show every available food across all open vendors
+            [results] = await db.execute(
+                `SELECT m.*, v.shop_name, v.id as vendor_id, v.location
+                 FROM menu_items m
+                 JOIN vendors v ON m.vendor_id = v.id
+                 WHERE m.is_available = 1 AND v.is_open = 1
+                 ORDER BY v.shop_name, m.name`
+            );
+        } else {
+            const searchTerm = `%${trimmed}%`;
+            [results] = await db.execute(
+                `SELECT m.*, v.shop_name, v.id as vendor_id, v.location
+                 FROM menu_items m
+                 JOIN vendors v ON m.vendor_id = v.id
+                 WHERE m.is_available = 1 AND v.is_open = 1
+                 AND (m.name LIKE ? OR m.description LIKE ? OR m.category LIKE ?)
+                 ORDER BY v.shop_name, m.name`,
+                [searchTerm, searchTerm, searchTerm]
+            );
         }
-
-        const searchTerm = `%${q.trim()}%`;
-
-        const [results] = await db.execute(
-            `SELECT m.*, v.shop_name, v.id as vendor_id, v.location
-             FROM menu_items m
-             JOIN vendors v ON m.vendor_id = v.id
-             WHERE m.is_available = 1 AND v.is_open = 1
-             AND (m.name LIKE ? OR m.description LIKE ? OR m.category LIKE ?)
-             ORDER BY v.shop_name, m.name`,
-            [searchTerm, searchTerm, searchTerm]
-        );
 
         await attachGalleryImages(results);
 
         res.render('customer/search', {
-            title: `Search: ${q} - KWASU Food`,
+            title: trimmed ? `Search: ${q} - KWASU Food` : 'Search Foods - KWASU Food',
             results,
-            query: q
+            query: q || ''
         });
     } catch (error) {
         console.error('Search foods error:', error);
