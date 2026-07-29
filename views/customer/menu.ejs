@@ -7,6 +7,14 @@
     <p><%= vendor.description || '' %> | 📍 <%= vendor.location %></p>
 </div>
 
+<!-- Compact cart bar, sticky right under the navbar on mobile so checkout never needs a long scroll -->
+<% if (isCustomerUser) { %>
+<div id="mobileCartBar" class="mobile-cart-bar">
+    <span id="mobileCartSummary">Cart is empty</span>
+    <button type="button" class="btn btn-primary btn-small" onclick="openOrderModal()">View Cart</button>
+</div>
+<% } %>
+
 <div class="menu-layout">
     <div class="menu-items">
         <% if (Object.keys(groupedMenu).length === 0) { %>
@@ -15,46 +23,41 @@
             <% for (const [category, items] of Object.entries(groupedMenu)) { %>
             <div class="menu-category">
                 <h2 class="category-title"><%= category %></h2>
-                <div class="menu-grid">
+                <div class="food-list">
                     <% items.forEach(item => { %>
-                    <div class="menu-card <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>"
-                         data-id="<%= item.id %>" data-name="<%= item.name %>" data-price="<%= item.price %>">
-
-                        <!-- Food Image -->
-                        <div class="food-image">
-                            <% if (item.image_url) { %>
-                                <img src="<%= item.image_url %>" alt="<%= item.name %>">
-                            <% } else { %>
-                                <div class="food-image-placeholder"><span>🍽</span></div>
-                            <% } %>
-                        </div>
-
-                        <!-- Stock Status Badge -->
-                        <% if (item.stock_status === 'sold_out') { %>
-                            <span class="badge badge-error" style="position: absolute; top: 10px; right: 10px;">SOLD OUT</span>
-                        <% } else if (item.stock_status === 'almost_sold') { %>
-                            <span class="badge badge-warning" style="position: absolute; top: 10px; right: 10px;">ALMOST SOLD</span>
-                        <% } else if (item.stock_status === 'restocked') { %>
-                            <span class="badge badge-info" style="position: absolute; top: 10px; right: 10px;">RESTOCKED</span>
-                        <% } %>
-
-                        <!-- Floating add-to-cart button, Glovo style -->
-                        <% if (item.stock_status !== 'sold_out') { %>
-                            <button type="button" class="add-cart-fab add-cart-btn"
-                                data-id="<%= item.id %>"
-                                data-name="<%= item.name %>"
-                                data-price="<%= item.price %>"
-                                aria-label="Add <%= item.name %> to cart">+</button>
-                        <% } %>
-
-                        <div class="menu-info">
+                    <% const images = item.images && item.images.length ? item.images : null; %>
+                    <div class="food-row <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>">
+                        <div class="food-row-content">
                             <h4><%= item.name %></h4>
-                            <p><%= item.description || '' %></p>
+                            <% if (item.description) { %><p><%= item.description %></p><% } %>
+                            <div class="food-row-meta">
+                                <span class="menu-price">₦<%= item.price %></span>
+                                <% if (item.stock_status === 'sold_out') { %>
+                                    <span class="badge badge-error">Sold out</span>
+                                <% } else if (item.stock_status === 'almost_sold') { %>
+                                    <span class="badge badge-warning">Almost sold</span>
+                                <% } else if (item.stock_status === 'restocked') { %>
+                                    <span class="badge badge-info">Restocked</span>
+                                <% } %>
+                            </div>
                         </div>
-                        <div class="menu-card-footer">
-                            <span class="menu-price">₦<%= item.price %></span>
-                            <% if (item.stock_status === 'sold_out') { %>
-                                <span class="badge badge-error">Unavailable</span>
+                        <div class="food-row-media">
+                            <% if (images) { %>
+                                <button type="button" class="food-row-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
+                                    <img src="<%= images[0] %>" alt="<%= item.name %>">
+                                    <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
+                                </button>
+                            <% } else { %>
+                                <div class="food-row-image">
+                                    <div class="food-image-placeholder"><span>🍽</span></div>
+                                </div>
+                            <% } %>
+                            <% if (item.stock_status !== 'sold_out') { %>
+                                <button type="button" class="add-cart-fab add-cart-btn"
+                                    data-id="<%= item.id %>"
+                                    data-name="<%= item.name %>"
+                                    data-price="<%= item.price %>"
+                                    aria-label="Add <%= item.name %> to cart">+</button>
                             <% } %>
                         </div>
                     </div>
@@ -114,6 +117,20 @@
 </div>
 <% } %>
 
+<!-- Photo gallery lightbox for items with more than one uploaded photo -->
+<div id="galleryModal" class="modal" style="display:none;">
+    <div class="modal-content gallery-modal-content">
+        <span class="close-btn" onclick="closeGallery()">&times;</span>
+        <h2 id="galleryTitle"></h2>
+        <div class="gallery-viewer">
+            <button type="button" class="gallery-nav gallery-prev" onclick="galleryStep(-1)" aria-label="Previous photo">&lsaquo;</button>
+            <img id="galleryImage" alt="">
+            <button type="button" class="gallery-nav gallery-next" onclick="galleryStep(1)" aria-label="Next photo">&rsaquo;</button>
+        </div>
+        <p class="gallery-counter"><span id="galleryPos">1</span> / <span id="galleryTotal">1</span></p>
+    </div>
+</div>
+
 <script>
     // Cart state (add/remove/render) lives in main.js and persists via localStorage.
     // This page only needs to wire up its own "add to cart" buttons.
@@ -131,6 +148,40 @@
                 parseFloat(this.dataset.price),
                 this
             );
+        });
+    });
+
+    // ===== Photo gallery lightbox =====
+    let galleryImages = [];
+    let galleryIndex = 0;
+
+    function renderGallerySlide() {
+        document.getElementById('galleryImage').src = galleryImages[galleryIndex];
+        document.getElementById('galleryPos').textContent = galleryIndex + 1;
+        document.getElementById('galleryTotal').textContent = galleryImages.length;
+    }
+
+    function galleryStep(delta) {
+        galleryIndex = (galleryIndex + delta + galleryImages.length) % galleryImages.length;
+        renderGallerySlide();
+    }
+
+    function closeGallery() {
+        document.getElementById('galleryModal').style.display = 'none';
+    }
+
+    document.querySelectorAll('.gallery-trigger').forEach(btn => {
+        btn.addEventListener('click', function() {
+            galleryImages = JSON.parse(this.dataset.images || '[]');
+            if (galleryImages.length === 0) return;
+            galleryIndex = 0;
+            document.getElementById('galleryTitle').textContent = this.dataset.title || '';
+            const modal = document.getElementById('galleryModal');
+            const multi = galleryImages.length > 1;
+            modal.querySelector('.gallery-prev').style.display = multi ? 'flex' : 'none';
+            modal.querySelector('.gallery-next').style.display = multi ? 'flex' : 'none';
+            renderGallerySlide();
+            modal.style.display = 'flex';
         });
     });
 </script>

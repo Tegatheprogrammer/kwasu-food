@@ -87,8 +87,21 @@ function updateCartUI() {
         if (checkoutBtn) checkoutBtn.disabled = false;
     }
 
-    if (cartTotalEl) cartTotalEl.textContent = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    if (cartTotalEl) cartTotalEl.textContent = total;
     if (cartInput) cartInput.value = JSON.stringify(cart);
+
+    const mobileBar = document.getElementById('mobileCartBar');
+    const mobileSummary = document.getElementById('mobileCartSummary');
+    if (mobileBar) {
+        if (cart.length === 0) {
+            mobileBar.classList.remove('show');
+        } else {
+            mobileBar.classList.add('show');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            if (mobileSummary) mobileSummary.textContent = `${count} item${count !== 1 ? 's' : ''} · ₦${total}`;
+        }
+    }
 }
 
 function openOrderModal() {

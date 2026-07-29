@@ -4,6 +4,27 @@
  */
 const db = require('../config/db');
 
+// Attach an `images` array (gallery, falling back to the single cover image) to each menu item
+const attachGalleryImages = async (items) => {
+    if (items.length === 0) return;
+    const itemIds = items.map(item => item.id);
+    const placeholders = itemIds.map(() => '?').join(',');
+    const [galleryRows] = await db.execute(
+        `SELECT menu_item_id, image_url FROM menu_item_images
+         WHERE menu_item_id IN (${placeholders})
+         ORDER BY position`,
+        itemIds
+    );
+    const galleryByItem = {};
+    galleryRows.forEach(row => {
+        if (!galleryByItem[row.menu_item_id]) galleryByItem[row.menu_item_id] = [];
+        galleryByItem[row.menu_item_id].push(row.image_url);
+    });
+    items.forEach(item => {
+        item.images = galleryByItem[item.id] || (item.image_url ? [item.image_url] : []);
+    });
+};
+
 // GET - Customer Dashboard
 const getDashboard = async (req, res) => {
     try {
@@ -99,6 +120,8 @@ const getMenu = async (req, res) => {
              ORDER BY category, name`,
             [vendorId]
         );
+
+        await attachGalleryImages(menuItems);
 
         // Group by category
         const groupedMenu = {};
@@ -358,8 +381,7 @@ const searchFoods = async (req, res) => {
             return res.render('customer/search', {
                 title: 'Search Foods - KWASU Food',
                 results: [],
-                query: '',
-                vendors: []
+                query: ''
             });
         }
 
@@ -375,22 +397,12 @@ const searchFoods = async (req, res) => {
             [searchTerm, searchTerm, searchTerm]
         );
 
-        const vendorIds = [...new Set(results.map(r => r.vendor_id))];
-        let vendors = [];
-        if (vendorIds.length > 0) {
-            const placeholders = vendorIds.map(() => '?').join(',');
-            const [vendorData] = await db.execute(
-                `SELECT id, shop_name, location FROM vendors WHERE id IN (${placeholders})`,
-                vendorIds
-            );
-            vendors = vendorData;
-        }
+        await attachGalleryImages(results);
 
         res.render('customer/search', {
             title: `Search: ${q} - KWASU Food`,
             results,
-            query: q,
-            vendors
+            query: q
         });
     } catch (error) {
         console.error('Search foods error:', error);

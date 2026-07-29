@@ -111,6 +111,25 @@ const getMenu = async (req, res) => {
             [vendors[0].id]
         );
 
+        if (menuItems.length > 0) {
+            const itemIds = menuItems.map(item => item.id);
+            const placeholders = itemIds.map(() => '?').join(',');
+            const [galleryRows] = await db.execute(
+                `SELECT menu_item_id, image_url FROM menu_item_images
+                 WHERE menu_item_id IN (${placeholders})
+                 ORDER BY position`,
+                itemIds
+            );
+            const galleryByItem = {};
+            galleryRows.forEach(row => {
+                if (!galleryByItem[row.menu_item_id]) galleryByItem[row.menu_item_id] = [];
+                galleryByItem[row.menu_item_id].push(row.image_url);
+            });
+            menuItems.forEach(item => {
+                item.images = galleryByItem[item.id] || (item.image_url ? [item.image_url] : []);
+            });
+        }
+
         res.render('vendor/menu', {
             title: 'Manage Menu - KWASU Food',
             menuItems
@@ -123,11 +142,29 @@ const getMenu = async (req, res) => {
 };
 
 
+// Collect up to 5 uploaded image URLs from a request body (image_url, image_url_2..image_url_5)
+const collectImageUrls = (body) => {
+    const urls = [body.image_url, body.image_url_2, body.image_url_3, body.image_url_4, body.image_url_5];
+    return urls.map(u => (u || '').trim()).filter(Boolean).slice(0, 5);
+};
+
+// Replace a menu item's gallery with the given ordered list of image URLs
+const saveMenuItemImages = async (menuItemId, imageUrls) => {
+    await db.execute('DELETE FROM menu_item_images WHERE menu_item_id = ?', [menuItemId]);
+    for (let i = 0; i < imageUrls.length; i++) {
+        await db.execute(
+            'INSERT INTO menu_item_images (menu_item_id, image_url, position) VALUES (?, ?, ?)',
+            [menuItemId, imageUrls[i], i + 1]
+        );
+    }
+};
+
 // POST - Add Menu Item
 const addMenuItem = async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { name, description, price, category, image_url, stock_status } = req.body;
+        const { name, description, price, category, stock_status } = req.body;
+        const imageUrls = collectImageUrls(req.body);
 
         const [vendors] = await db.execute(
             'SELECT id FROM vendors WHERE user_id = ?',
@@ -139,11 +176,15 @@ const addMenuItem = async (req, res) => {
             return res.redirect('/vendor/menu');
         }
 
-        await db.execute(
+        const [result] = await db.execute(
             `INSERT INTO menu_items (vendor_id, name, description, price, category, image_url, stock_status)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [vendors[0].id, name, description || null, price, category, image_url || null, stock_status || 'in_stock']
+            [vendors[0].id, name, description || null, price, category, imageUrls[0] || null, stock_status || 'in_stock']
         );
+
+        if (imageUrls.length > 0) {
+            await saveMenuItemImages(result.insertId, imageUrls);
+        }
 
         req.flash('success', 'Menu item added successfully');
         res.redirect('/vendor/menu');
@@ -160,7 +201,8 @@ const updateMenuItem = async (req, res) => {
     try {
         const userId = req.session.user.id;
         const itemId = req.params.id;
-        const { name, description, price, category, image_url, stock_status } = req.body;
+        const { name, description, price, category, stock_status } = req.body;
+        const imageUrls = collectImageUrls(req.body);
 
         const [vendors] = await db.execute(
             'SELECT id FROM vendors WHERE user_id = ?',
@@ -172,12 +214,24 @@ const updateMenuItem = async (req, res) => {
             return res.redirect('/vendor/menu');
         }
 
+        const [existing] = await db.execute(
+            'SELECT id FROM menu_items WHERE id = ? AND vendor_id = ?',
+            [itemId, vendors[0].id]
+        );
+
+        if (existing.length === 0) {
+            req.flash('error', 'Item not found');
+            return res.redirect('/vendor/menu');
+        }
+
         await db.execute(
             `UPDATE menu_items
              SET name = ?, description = ?, price = ?, category = ?, image_url = ?, stock_status = ?
              WHERE id = ? AND vendor_id = ?`,
-            [name, description || null, price, category, image_url || null, stock_status || 'in_stock', itemId, vendors[0].id]
+            [name, description || null, price, category, imageUrls[0] || null, stock_status || 'in_stock', itemId, vendors[0].id]
         );
+
+        await saveMenuItemImages(itemId, imageUrls);
 
         req.flash('success', 'Menu item updated successfully');
         res.redirect('/vendor/menu');
