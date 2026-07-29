@@ -21,6 +21,19 @@ const isCustomer = (req, res, next) => {
     res.redirect('/');
 };
 
+// Allow anyone to browse, but require a customer account to actually order
+const requireCustomerForOrder = (req, res, next) => {
+    if (!req.session.user) {
+        req.flash('error', 'Please sign up or log in to place an order');
+        return res.redirect('/register');
+    }
+    if (req.session.user.role !== 'customer') {
+        req.flash('error', 'Access denied. Customer account required.');
+        return res.redirect('/');
+    }
+    next();
+};
+
 // Check if user is a vendor
 const isVendor = (req, res, next) => {
     if (req.session.user && req.session.user.role === 'vendor') {
@@ -66,5 +79,6 @@ module.exports = {
     isVendor,
     isRider,
     isAdmin,
-    redirectIfAuthenticated
+    redirectIfAuthenticated,
+    requireCustomerForOrder
 };

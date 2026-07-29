@@ -5,16 +5,13 @@
     <p>Find your favorite meals across all vendors</p>
 </div>
 
-<div style="margin-bottom: 30px;">
-    <form action="/customer/search" method="GET" style="display: flex; gap: 10px;">
-        <input type="text" name="q" value="<%= query || '' %>" placeholder="Search for food, snack, drink..." 
-               style="flex: 1; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1em;" required>
-        <button type="submit" class="btn btn-primary" style="padding: 12px 25px;">Search</button>
-        <% if (query) { %>
-            <a href="/customer/search" class="btn btn-outline" style="padding: 12px 20px;">Clear</a>
-        <% } %>
-    </form>
-</div>
+<form action="/customer/search" method="GET" class="search-bar">
+    <input type="text" name="q" value="<%= query || '' %>" placeholder="Search for food, snack, drink..." required>
+    <button type="submit" class="btn btn-primary">Search</button>
+    <% if (query) { %>
+        <a href="/customer/search" class="btn btn-outline">Clear</a>
+    <% } %>
+</form>
 
 <% if (query) { %>
     <% if (results.length === 0) { %>
@@ -42,17 +39,15 @@
         <h2 style="margin-bottom: 15px;">Food Items</h2>
         <div class="menu-grid">
             <% results.forEach(item => { %>
-            <div class="menu-card" style="position: relative;">
-                <div class="food-image" style="width: 100%; height: 150px; overflow: hidden; border-radius: 8px 8px 0 0; margin-bottom: 10px;">
+            <div class="menu-card">
+                <div class="food-image">
                     <% if (item.image_url) { %>
-                        <img src="<%= item.image_url %>" alt="<%= item.name %>" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="<%= item.image_url %>" alt="<%= item.name %>">
                     <% } else { %>
-                        <div style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-                            <span style="font-size: 2em;"></span>
-                        </div>
+                        <div class="food-image-placeholder"><span>🍽</span></div>
                     <% } %>
                 </div>
-                
+
                 <% if (item.stock_status === 'sold_out') { %>
                     <span class="badge badge-error" style="position: absolute; top: 10px; right: 10px;">SOLD OUT</span>
                 <% } else if (item.stock_status === 'almost_sold') { %>
@@ -66,10 +61,12 @@
                     <p><%= item.description || '' %></p>
                     <span class="menu-price">₦<%= item.price %></span>
                 </div>
-                <p style="color: #4CAF50; font-size: 0.9em; margin-bottom: 10px;">
-                    <i>📍 <%= item.shop_name %></i>
+                <p style="color: var(--primary-dark); font-size: 0.85rem; padding: 0 1rem; margin-bottom: 0.5rem;">
+                    📍 <%= item.shop_name %>
                 </p>
-                <a href="/customer/menu/<%= item.vendor_id %>" class="btn btn-primary btn-block btn-small">View Vendor</a>
+                <div style="padding: 0 1rem 1rem;">
+                    <a href="/customer/menu/<%= item.vendor_id %>" class="btn btn-primary btn-block btn-small">View Vendor</a>
+                </div>
             </div>
             <% }) %>
         </div>

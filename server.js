@@ -59,7 +59,8 @@ app.get('/', (req, res) => {
         if (role === 'rider') return res.redirect('/rider/dashboard');
         if (role === 'admin') return res.redirect('/admin/dashboard');
     }
-    res.redirect('/login');
+    // Visitors get to browse vendors and food right away, no account needed
+    res.redirect('/customer/vendors');
 });
 
 // 404 handler
@@ -76,6 +77,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`\uD83C\uDF5C KWASU Food Ordering System running on http://localhost:${PORT}`);
 });
-
-
-app.use(express.static('public'));

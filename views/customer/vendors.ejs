@@ -1,15 +1,31 @@
 <%- include('../partials/header') %>
 
+<% const bannerPalette = ['linear-gradient(135deg,#2DA878,#1F7A54)', 'linear-gradient(135deg,#FFC742,#E6AC1F)', 'linear-gradient(135deg,#7c3aed,#5b21b6)', 'linear-gradient(135deg,#2563eb,#1d4ed8)']; %>
+<% function bannerFor(name) { let h = 0; for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return bannerPalette[h % bannerPalette.length]; } %>
+
+<% if (!user) { %>
+<div class="hero">
+    <h1>Campus food, delivered fast 🍜</h1>
+    <p>Browse every vendor and dish around KWASU Malete. Sign up only when you're ready to order.</p>
+    <form action="/customer/vendors" method="GET" class="hero-search">
+        <input type="text" name="search" value="<%= search || '' %>" placeholder="Search vendors by name or location...">
+        <button type="submit" class="btn btn-accent">Search</button>
+    </form>
+    <div class="hero-cta">
+        <a href="/register" class="btn btn-primary">Create Free Account</a>
+        <a href="/customer/search" class="btn btn-outline" style="border-color: rgba(255,255,255,0.5); color: #fff;">Search Foods</a>
+    </div>
+</div>
+<% } %>
+
 <div class="page-header">
     <h1>Browse Vendors</h1>
     <p>Discover delicious food from vendors around KWASU campus</p>
 </div>
 
-<!-- Search -->
-<div style="margin-bottom: 25px; display: flex; gap: 10px;">
-    <form action="/customer/vendors" method="GET" style="display: flex; gap: 10px; flex: 1;">
-        <input type="text" name="search" value="<%= search || '' %>" placeholder="Search vendors by name or location..." 
-               style="flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px;">
+<div style="margin-bottom: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <form action="/customer/vendors" method="GET" class="search-bar" style="flex: 1; margin-bottom: 0;">
+        <input type="text" name="search" value="<%= search || '' %>" placeholder="Search vendors by name or location...">
         <button type="submit" class="btn btn-primary">Search</button>
         <% if (search) { %>
             <a href="/customer/vendors" class="btn btn-outline">Clear</a>
@@ -27,17 +43,22 @@
     <% } else { %>
         <% vendors.forEach(vendor => { %>
         <div class="vendor-card">
-            <div class="vendor-header">
-                <h3><%= vendor.shop_name %></h3>
-                <span class="badge badge-success">Open</span>
+            <div class="vendor-banner" style="background: <%= bannerFor(vendor.shop_name) %>;">
+                <span class="vendor-initial"><%= vendor.shop_name.charAt(0).toUpperCase() %></span>
             </div>
-            <p class="vendor-desc"><%= vendor.description || 'Delicious meals available!' %></p>
-            <div class="vendor-meta">
-                <span>📍 <%= vendor.location %></span>
-                <span>📞 <%= vendor.phone || 'N/A' %></span>
-                <% if (vendor.menu_count) { %><span>🍽 <%= vendor.menu_count %> items</span><% } %>
+            <div class="vendor-card-body">
+                <div class="vendor-header">
+                    <h3><%= vendor.shop_name %></h3>
+                    <span class="badge badge-success">Open</span>
+                </div>
+                <p class="vendor-desc"><%= vendor.description || 'Delicious meals available!' %></p>
+                <div class="vendor-meta">
+                    <span>📍 <%= vendor.location %></span>
+                    <span>📞 <%= vendor.phone || 'N/A' %></span>
+                    <% if (vendor.menu_count) { %><span>🍽 <%= vendor.menu_count %> items</span><% } %>
+                </div>
+                <a href="/customer/menu/<%= vendor.id %>" class="btn btn-primary btn-block">View Menu</a>
             </div>
-            <a href="/customer/menu/<%= vendor.id %>" class="btn btn-primary btn-block">View Menu</a>
         </div>
         <% }) %>
     <% } %>

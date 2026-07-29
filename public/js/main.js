@@ -11,7 +11,7 @@ function saveCart() {
     updateCartUI();
 }
 
-function addToCart(id, name, price) {
+function addToCart(id, name, price, btn) {
     const existing = cart.find(item => item.id === id);
     if (existing) {
         existing.quantity += 1;
@@ -19,14 +19,13 @@ function addToCart(id, name, price) {
         cart.push({ id, name, price: parseFloat(price), quantity: 1 });
     }
     saveCart();
-    const btn = event.target;
+
+    if (!btn) return;
     const originalText = btn.textContent;
-    btn.textContent = 'Added!';
-    btn.style.background = '#059669';
+    btn.textContent = '✓';
     setTimeout(() => {
         btn.textContent = originalText;
-        btn.style.background = '';
-    }, 800);
+    }, 700);
 }
 
 function removeFromCart(id) {
