@@ -3,6 +3,31 @@
  * Handles cart, modals, and UI interactions
  */
 
+// ==================== MOBILE NAV ====================
+(function () {
+    const navToggle = document.getElementById('navToggle');
+    const navMenu = document.getElementById('navMenu');
+    if (!navToggle || !navMenu) return;
+
+    function setOpen(isOpen) {
+        navMenu.classList.toggle('open', isOpen);
+        navToggle.classList.toggle('open', isOpen);
+        navToggle.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    navToggle.addEventListener('click', () => {
+        setOpen(!navMenu.classList.contains('open'));
+    });
+
+    navMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => setOpen(false));
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) setOpen(false);
+    });
+})();
+
 // ==================== CART FUNCTIONALITY ====================
 let cart = JSON.parse(localStorage.getItem('kwasu_cart')) || [];
 

@@ -2,37 +2,42 @@
     <div class="nav-brand">
         <a href="/">KWASU Food</a>
     </div>
-    <% if (user) { %>
-    <div class="nav-links">
-        <% if (user.role === 'customer') { %>
-            <a href="/customer/dashboard">Dashboard</a>
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navMenu">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="nav-menu" id="navMenu">
+        <% if (user) { %>
+        <div class="nav-links">
+            <% if (user.role === 'customer') { %>
+                <a href="/customer/dashboard">Dashboard</a>
+                <a href="/customer/vendors">Vendors</a>
+                <a href="/customer/orders">My Orders</a>
+            <% } else if (user.role === 'vendor') { %>
+                <a href="/vendor/dashboard">Dashboard</a>
+                <a href="/vendor/menu">Menu</a>
+                <a href="/vendor/orders">Orders</a>
+            <% } else if (user.role === 'rider') { %>
+                <a href="/rider/dashboard">Dashboard</a>
+                <a href="/rider/deliveries">Deliveries</a>
+            <% } else if (user.role === 'admin') { %>
+                <a href="/admin/dashboard">Dashboard</a>
+                <a href="/admin/users">Users</a>
+                <a href="/admin/tam-results">TAM Results</a>
+            <% } %>
+        </div>
+        <div class="nav-user">
+            <span class="user-name"><%= user.full_name %> <small>(<%= user.role %>)</small></span>
+            <a href="/logout" class="btn btn-small btn-outline">Logout</a>
+        </div>
+        <% } else { %>
+        <div class="nav-links">
             <a href="/customer/vendors">Vendors</a>
-            <a href="/customer/orders">My Orders</a>
-        <% } else if (user.role === 'vendor') { %>
-            <a href="/vendor/dashboard">Dashboard</a>
-            <a href="/vendor/menu">Menu</a>
-            <a href="/vendor/orders">Orders</a>
-        <% } else if (user.role === 'rider') { %>
-            <a href="/rider/dashboard">Dashboard</a>
-            <a href="/rider/deliveries">Deliveries</a>
-        <% } else if (user.role === 'admin') { %>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/tam-results">TAM Results</a>
+            <a href="/customer/search">Search Foods</a>
+        </div>
+        <div class="nav-user">
+            <a href="/login" class="btn btn-small btn-outline">Login</a>
+            <a href="/register" class="btn btn-small btn-primary">Sign Up</a>
+        </div>
         <% } %>
     </div>
-    <div class="nav-user">
-        <span class="user-name"><%= user.full_name %> <small>(<%= user.role %>)</small></span>
-        <a href="/logout" class="btn btn-small btn-outline">Logout</a>
-    </div>
-    <% } else { %>
-    <div class="nav-links">
-        <a href="/customer/vendors">Vendors</a>
-        <a href="/customer/search">Search Foods</a>
-    </div>
-    <div class="nav-user">
-        <a href="/login" class="btn btn-small btn-outline">Login</a>
-        <a href="/register" class="btn btn-small btn-primary">Sign Up</a>
-    </div>
-    <% } %>
 </nav>
