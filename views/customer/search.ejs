@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 
 <div class="page-header">
-    <h1> Search Foods</h1>
+    <h1>Search Foods</h1>
     <p>Find your favorite meals across all vendors</p>
 </div>
 
@@ -20,52 +20,36 @@
             <p>Try searching with different keywords.</p>
         </div>
     <% } else { %>
-        
-        <% if (vendors.length > 0) { %>
-        <h2 style="margin-bottom: 15px;">Vendors Found</h2>
-        <div class="vendor-grid" style="margin-bottom: 40px;">
-            <% vendors.forEach(vendor => { %>
-            <div class="vendor-card">
-                <div class="vendor-header">
-                    <h3><%= vendor.shop_name %></h3>
-                </div>
-                <p class="vendor-desc">📍 <%= vendor.location %></p>
-                <a href="/customer/menu/<%= vendor.id %>" class="btn btn-primary btn-block">View Menu</a>
-            </div>
-            <% }) %>
-        </div>
-        <% } %>
-
-        <h2 style="margin-bottom: 15px;">Food Items</h2>
-        <div class="menu-grid">
+        <div class="food-list">
             <% results.forEach(item => { %>
-            <div class="menu-card">
-                <div class="food-image">
-                    <% if (item.image_url) { %>
-                        <img src="<%= item.image_url %>" alt="<%= item.name %>">
-                    <% } else { %>
-                        <div class="food-image-placeholder"><span>🍽</span></div>
-                    <% } %>
-                </div>
-
-                <% if (item.stock_status === 'sold_out') { %>
-                    <span class="badge badge-error" style="position: absolute; top: 10px; right: 10px;">SOLD OUT</span>
-                <% } else if (item.stock_status === 'almost_sold') { %>
-                    <span class="badge badge-warning" style="position: absolute; top: 10px; right: 10px;">ALMOST SOLD</span>
-                <% } else if (item.stock_status === 'restocked') { %>
-                    <span class="badge badge-info" style="position: absolute; top: 10px; right: 10px;">RESTOCKED</span>
-                <% } %>
-
-                <div class="menu-info">
+            <% const images = item.images && item.images.length ? item.images : null; %>
+            <div class="food-row <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>">
+                <div class="food-row-content">
                     <h4><%= item.name %></h4>
-                    <p><%= item.description || '' %></p>
-                    <span class="menu-price">₦<%= item.price %></span>
+                    <a href="/customer/menu/<%= item.vendor_id %>" class="vendor-tag">🍴 <%= item.shop_name %></a>
+                    <% if (item.description) { %><p><%= item.description %></p><% } %>
+                    <div class="food-row-meta">
+                        <span class="menu-price">₦<%= item.price %></span>
+                        <% if (item.stock_status === 'sold_out') { %>
+                            <span class="badge badge-error">Sold out</span>
+                        <% } else if (item.stock_status === 'almost_sold') { %>
+                            <span class="badge badge-warning">Almost sold</span>
+                        <% } else if (item.stock_status === 'restocked') { %>
+                            <span class="badge badge-info">Restocked</span>
+                        <% } %>
+                    </div>
                 </div>
-                <p style="color: var(--primary-dark); font-size: 0.85rem; padding: 0 1rem; margin-bottom: 0.5rem;">
-                    📍 <%= item.shop_name %>
-                </p>
-                <div style="padding: 0 1rem 1rem;">
-                    <a href="/customer/menu/<%= item.vendor_id %>" class="btn btn-primary btn-block btn-small">View Vendor</a>
+                <div class="food-row-media">
+                    <% if (images) { %>
+                        <button type="button" class="food-row-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
+                            <img src="<%= images[0] %>" alt="<%= item.name %>">
+                            <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
+                        </button>
+                    <% } else { %>
+                        <a href="/customer/menu/<%= item.vendor_id %>" class="food-row-image">
+                            <div class="food-image-placeholder"><span>🍽</span></div>
+                        </a>
+                    <% } %>
                 </div>
             </div>
             <% }) %>
@@ -77,5 +61,54 @@
         <p>Type a food name, category, or description above.</p>
     </div>
 <% } %>
+
+<!-- Photo gallery lightbox for items with more than one uploaded photo -->
+<div id="galleryModal" class="modal" style="display:none;">
+    <div class="modal-content gallery-modal-content">
+        <span class="close-btn" onclick="closeGallery()">&times;</span>
+        <h2 id="galleryTitle"></h2>
+        <div class="gallery-viewer">
+            <button type="button" class="gallery-nav gallery-prev" onclick="galleryStep(-1)" aria-label="Previous photo">&lsaquo;</button>
+            <img id="galleryImage" alt="">
+            <button type="button" class="gallery-nav gallery-next" onclick="galleryStep(1)" aria-label="Next photo">&rsaquo;</button>
+        </div>
+        <p class="gallery-counter"><span id="galleryPos">1</span> / <span id="galleryTotal">1</span></p>
+    </div>
+</div>
+
+<script>
+    let galleryImages = [];
+    let galleryIndex = 0;
+
+    function renderGallerySlide() {
+        document.getElementById('galleryImage').src = galleryImages[galleryIndex];
+        document.getElementById('galleryPos').textContent = galleryIndex + 1;
+        document.getElementById('galleryTotal').textContent = galleryImages.length;
+    }
+
+    function galleryStep(delta) {
+        galleryIndex = (galleryIndex + delta + galleryImages.length) % galleryImages.length;
+        renderGallerySlide();
+    }
+
+    function closeGallery() {
+        document.getElementById('galleryModal').style.display = 'none';
+    }
+
+    document.querySelectorAll('.gallery-trigger').forEach(btn => {
+        btn.addEventListener('click', function() {
+            galleryImages = JSON.parse(this.dataset.images || '[]');
+            if (galleryImages.length === 0) return;
+            galleryIndex = 0;
+            document.getElementById('galleryTitle').textContent = this.dataset.title || '';
+            const modal = document.getElementById('galleryModal');
+            const multi = galleryImages.length > 1;
+            modal.querySelector('.gallery-prev').style.display = multi ? 'flex' : 'none';
+            modal.querySelector('.gallery-next').style.display = multi ? 'flex' : 'none';
+            renderGallerySlide();
+            modal.style.display = 'flex';
+        });
+    });
+</script>
 
 <%- include('../partials/footer') %>

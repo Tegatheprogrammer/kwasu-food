@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS menu_items (
     FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE
 );
 
+-- Extra photos per menu item (up to 5 total, including the cover image above)
+CREATE TABLE IF NOT EXISTS menu_item_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    menu_item_id INT NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    position TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE
+);
+
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,

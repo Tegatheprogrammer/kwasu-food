@@ -56,15 +56,15 @@
                 <td><span class="badge <%= item.is_available ? 'badge-success' : 'badge-error' %>"><%= item.is_available ? 'Available' : 'Unavailable' %></span></td>
                 <td class="actions">
                     <!-- EDIT BUTTON: Uses data attributes, NO inline onclick -->
-                    <button class="btn btn-small edit-btn" 
+                    <button class="btn btn-small edit-btn"
                             data-id="<%= item.id %>"
                             data-name="<%= item.name %>"
                             data-desc="<%= item.description || '' %>"
                             data-price="<%= item.price %>"
                             data-category="<%= item.category %>"
-                            data-image="<%= item.image_url || '' %>"
+                            data-images='<%- JSON.stringify(item.images || []) %>'
                             data-stock="<%= item.stock_status %>">Edit</button>
-                    
+
                     <form action="/vendor/menu/toggle/<%= item.id %>" method="POST" style="display:inline;">
                         <button type="submit" class="btn btn-small btn-outline"><%= item.is_available ? 'Disable' : 'Enable' %></button>
                     </form>
@@ -84,22 +84,32 @@
     <div class="modal-content">
         <span class="close-btn" onclick="document.getElementById('addModal').style.display='none'">&times;</span>
         <h2>Add Menu Item</h2>
-        <form action="/vendor/menu/add" method="POST">
+        <form action="/vendor/menu/add" method="POST" id="addForm">
             <div class="form-group"><label>Name *</label><input type="text" name="name" required></div>
             <div class="form-group"><label>Description</label><textarea name="description" rows="2"></textarea></div>
             <div class="form-group"><label>Price (₦) *</label><input type="number" name="price" step="0.01" required></div>
             <div class="form-group"><label>Category *</label><input type="text" name="category" required placeholder="e.g. Rice, Swallow, Snacks"></div>
-            
-            <!-- FILE UPLOAD -->
+
+            <!-- FILE UPLOADS: up to 5 photos, first one is the cover shown in listings -->
             <div class="form-group">
-                <label>Food Image</label>
-                <input type="file" id="addFoodImage" accept="image/jpeg,image/png,image/webp">
-                <div id="addPreview" style="margin-top:10px; display:none;">
-                    <img style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #ddd;">
+                <label>Food Photos (up to 5)</label>
+                <div class="image-slots">
+                    <% for (let i = 1; i <= 5; i++) { %>
+                    <div class="image-slot">
+                        <label class="image-slot-btn" for="addFoodImage<%= i %>">
+                            <div class="image-slot-preview" id="addPreview<%= i %>">
+                                <img alt="">
+                                <span class="image-slot-plus">+</span>
+                            </div>
+                        </label>
+                        <small><%= i === 1 ? 'Cover' : 'Photo ' + i %></small>
+                        <input type="file" id="addFoodImage<%= i %>" accept="image/jpeg,image/png,image/webp" hidden>
+                        <input type="hidden" name="image_url<%= i === 1 ? '' : '_' + i %>" id="addImageUrl<%= i %>">
+                    </div>
+                    <% } %>
                 </div>
-                <input type="hidden" name="image_url" id="addImageUrl">
             </div>
-            
+
             <div class="form-group"><label>Stock Status</label>
                 <select name="stock_status">
                     <option value="in_stock" selected>In Stock</option>
@@ -123,17 +133,27 @@
             <div class="form-group"><label>Description</label><textarea name="description" id="editDesc" rows="2"></textarea></div>
             <div class="form-group"><label>Price (₦) *</label><input type="number" name="price" id="editPrice" step="0.01" required></div>
             <div class="form-group"><label>Category *</label><input type="text" name="category" id="editCategory" required></div>
-            
-            <!-- FILE UPLOAD -->
+
+            <!-- FILE UPLOADS: up to 5 photos, first one is the cover shown in listings -->
             <div class="form-group">
-                <label>Food Image</label>
-                <input type="file" id="editFoodImage" accept="image/jpeg,image/png,image/webp">
-                <div id="editPreview" style="margin-top:10px; display:none;">
-                    <img style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #ddd;">
+                <label>Food Photos (up to 5)</label>
+                <div class="image-slots">
+                    <% for (let i = 1; i <= 5; i++) { %>
+                    <div class="image-slot">
+                        <label class="image-slot-btn" for="editFoodImage<%= i %>">
+                            <div class="image-slot-preview" id="editPreview<%= i %>">
+                                <img alt="">
+                                <span class="image-slot-plus">+</span>
+                            </div>
+                        </label>
+                        <small><%= i === 1 ? 'Cover' : 'Photo ' + i %></small>
+                        <input type="file" id="editFoodImage<%= i %>" accept="image/jpeg,image/png,image/webp" hidden>
+                        <input type="hidden" name="image_url<%= i === 1 ? '' : '_' + i %>" id="editImageUrl<%= i %>">
+                    </div>
+                    <% } %>
                 </div>
-                <input type="hidden" name="image_url" id="editImageUrl">
             </div>
-            
+
             <div class="form-group"><label>Stock Status</label>
                 <select name="stock_status" id="editStock">
                     <option value="in_stock">In Stock</option>
@@ -148,44 +168,7 @@
 </div>
 
 <script>
-// ===== EDIT BUTTON CLICK HANDLER =====
-// This attaches to ALL .edit-btn elements
-document.querySelectorAll('.edit-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        // Read data from the button
-        var id = this.getAttribute('data-id');
-        var name = this.getAttribute('data-name');
-        var desc = this.getAttribute('data-desc');
-        var price = this.getAttribute('data-price');
-        var category = this.getAttribute('data-category');
-        var image = this.getAttribute('data-image');
-        var stock = this.getAttribute('data-stock');
-
-        // Fill the form
-        document.getElementById('editForm').action = '/vendor/menu/edit/' + id;
-        document.getElementById('editName').value = name;
-        document.getElementById('editDesc').value = desc;
-        document.getElementById('editPrice').value = price;
-        document.getElementById('editCategory').value = category;
-        document.getElementById('editStock').value = stock || 'in_stock';
-        document.getElementById('editImageUrl').value = image;
-
-        // Show image preview if exists
-        var previewDiv = document.getElementById('editPreview');
-        var previewImg = previewDiv.querySelector('img');
-        if (image) {
-            previewImg.src = image;
-            previewDiv.style.display = 'block';
-        } else {
-            previewDiv.style.display = 'none';
-        }
-
-        // Show the modal
-        document.getElementById('editModal').style.display = 'block';
-    });
-});
-
-// ===== IMAGE UPLOAD & PREVIEW =====
+// ===== IMAGE UPLOAD & PREVIEW (shared by both modals, slots 1-5) =====
 function handleImageUpload(input, previewId, hiddenId) {
     var previewDiv = document.getElementById(previewId);
     var previewImg = previewDiv.querySelector('img');
@@ -194,15 +177,13 @@ function handleImageUpload(input, previewId, hiddenId) {
     if (input.files && input.files[0]) {
         var file = input.files[0];
 
-        // Show local preview first
         var reader = new FileReader();
         reader.onload = function(e) {
             previewImg.src = e.target.result;
-            previewDiv.style.display = 'block';
+            previewDiv.classList.add('has-image');
         };
         reader.readAsDataURL(file);
 
-        // Upload to server
         var formData = new FormData();
         formData.append('food_image', file);
 
@@ -226,13 +207,62 @@ function handleImageUpload(input, previewId, hiddenId) {
     }
 }
 
-// Attach upload handlers
-document.getElementById('addFoodImage').addEventListener('change', function() {
-    handleImageUpload(this, 'addPreview', 'addImageUrl');
+function setSlotImage(previewId, hiddenId, url) {
+    var previewDiv = document.getElementById(previewId);
+    var previewImg = previewDiv.querySelector('img');
+    document.getElementById(hiddenId).value = url || '';
+    if (url) {
+        previewImg.src = url;
+        previewDiv.classList.add('has-image');
+    } else {
+        previewImg.src = '';
+        previewDiv.classList.remove('has-image');
+    }
+}
+
+for (var i = 1; i <= 5; i++) {
+    (function(slot) {
+        document.getElementById('addFoodImage' + slot).addEventListener('change', function() {
+            handleImageUpload(this, 'addPreview' + slot, 'addImageUrl' + slot);
+        });
+        document.getElementById('editFoodImage' + slot).addEventListener('change', function() {
+            handleImageUpload(this, 'editPreview' + slot, 'editImageUrl' + slot);
+        });
+    })(i);
+}
+
+// Reset the Add modal's photo slots each time it's opened fresh
+document.querySelector('button[onclick*="addModal"]').addEventListener('click', function() {
+    document.getElementById('addForm').reset();
+    for (var i = 1; i <= 5; i++) {
+        setSlotImage('addPreview' + i, 'addImageUrl' + i, '');
+    }
 });
 
-document.getElementById('editFoodImage').addEventListener('change', function() {
-    handleImageUpload(this, 'editPreview', 'editImageUrl');
+// ===== EDIT BUTTON CLICK HANDLER =====
+document.querySelectorAll('.edit-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var id = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        var desc = this.getAttribute('data-desc');
+        var price = this.getAttribute('data-price');
+        var category = this.getAttribute('data-category');
+        var images = JSON.parse(this.getAttribute('data-images') || '[]');
+        var stock = this.getAttribute('data-stock');
+
+        document.getElementById('editForm').action = '/vendor/menu/edit/' + id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editDesc').value = desc;
+        document.getElementById('editPrice').value = price;
+        document.getElementById('editCategory').value = category;
+        document.getElementById('editStock').value = stock || 'in_stock';
+
+        for (var i = 1; i <= 5; i++) {
+            setSlotImage('editPreview' + i, 'editImageUrl' + i, images[i - 1] || '');
+        }
+
+        document.getElementById('editModal').style.display = 'block';
+    });
 });
 
 // ===== CLOSE MODAL ON OUTSIDE CLICK =====
