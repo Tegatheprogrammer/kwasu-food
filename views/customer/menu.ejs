@@ -1,6 +1,8 @@
 <%- include('../partials/header') %>
 
 <% const isCustomerUser = user && user.role === 'customer'; %>
+<% const categories = Object.keys(groupedMenu); %>
+<% const allItems = categories.flatMap(cat => groupedMenu[cat].map(item => ({ ...item, category: cat }))); %>
 
 <div class="page-header">
     <h1><%= vendor.shop_name %></h1>
@@ -15,56 +17,62 @@
 </div>
 <% } %>
 
+<% if (categories.length > 1) { %>
+<div class="category-tabs" id="categoryTabs">
+    <button type="button" class="category-tab active" data-category="all">All</button>
+    <% categories.forEach(cat => { %>
+        <button type="button" class="category-tab" data-category="<%= cat %>"><%= cat %></button>
+    <% }) %>
+</div>
+<% } %>
+
 <div class="menu-layout">
     <div class="menu-items">
-        <% if (Object.keys(groupedMenu).length === 0) { %>
+        <% if (allItems.length === 0) { %>
             <div class="empty-state"><h3>No menu items available</h3></div>
         <% } else { %>
-            <% for (const [category, items] of Object.entries(groupedMenu)) { %>
-            <div class="menu-category">
-                <h2 class="category-title"><%= category %></h2>
-                <div class="food-list">
-                    <% items.forEach(item => { %>
-                    <% const images = item.images && item.images.length ? item.images : null; %>
-                    <div class="food-row <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>">
-                        <div class="food-row-content">
-                            <h4><%= item.name %></h4>
-                            <% if (item.description) { %><p><%= item.description %></p><% } %>
-                            <div class="food-row-meta">
-                                <span class="menu-price">₦<%= item.price %></span>
-                                <% if (item.stock_status === 'sold_out') { %>
-                                    <span class="badge badge-error">Sold out</span>
-                                <% } else if (item.stock_status === 'almost_sold') { %>
-                                    <span class="badge badge-warning">Almost sold</span>
-                                <% } else if (item.stock_status === 'restocked') { %>
-                                    <span class="badge badge-info">Restocked</span>
-                                <% } %>
+            <div class="food-grid" id="foodGrid">
+                <% allItems.forEach(item => { %>
+                <% const images = item.images && item.images.length ? item.images : null; %>
+                <div class="food-card <%= item.stock_status === 'sold_out' ? 'sold-out' : '' %>" data-category="<%= item.category %>">
+                    <div class="food-card-media">
+                        <% if (images) { %>
+                            <button type="button" class="food-card-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
+                                <img src="<%= images[0] %>" alt="<%= item.name %>">
+                                <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
+                            </button>
+                        <% } else { %>
+                            <div class="food-card-image">
+                                <div class="food-image-placeholder"><span>🍽</span></div>
                             </div>
-                        </div>
-                        <div class="food-row-media">
-                            <% if (images) { %>
-                                <button type="button" class="food-row-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
-                                    <img src="<%= images[0] %>" alt="<%= item.name %>">
-                                    <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
-                                </button>
-                            <% } else { %>
-                                <div class="food-row-image">
-                                    <div class="food-image-placeholder"><span>🍽</span></div>
-                                </div>
-                            <% } %>
-                            <% if (item.stock_status !== 'sold_out') { %>
-                                <button type="button" class="add-cart-fab add-cart-btn"
-                                    data-id="<%= item.id %>"
-                                    data-name="<%= item.name %>"
-                                    data-price="<%= item.price %>"
-                                    aria-label="Add <%= item.name %> to cart">+</button>
-                            <% } %>
+                        <% } %>
+
+                        <% if (item.stock_status === 'sold_out') { %>
+                            <span class="badge badge-error" style="position: absolute; top: 8px; left: 8px;">SOLD OUT</span>
+                        <% } else if (item.stock_status === 'almost_sold') { %>
+                            <span class="badge badge-warning" style="position: absolute; top: 8px; left: 8px;">ALMOST SOLD</span>
+                        <% } else if (item.stock_status === 'restocked') { %>
+                            <span class="badge badge-info" style="position: absolute; top: 8px; left: 8px;">RESTOCKED</span>
+                        <% } %>
+
+                        <% if (item.stock_status !== 'sold_out') { %>
+                            <button type="button" class="add-cart-fab add-cart-btn"
+                                data-id="<%= item.id %>"
+                                data-name="<%= item.name %>"
+                                data-price="<%= item.price %>"
+                                aria-label="Add <%= item.name %> to cart">+</button>
+                        <% } %>
+                    </div>
+                    <div class="food-card-body">
+                        <h4><%= item.name %></h4>
+                        <% if (item.description) { %><p><%= item.description %></p><% } %>
+                        <div class="food-card-footer">
+                            <span class="menu-price">₦<%= item.price %></span>
                         </div>
                     </div>
-                    <% }) %>
                 </div>
+                <% }) %>
             </div>
-            <% } %>
         <% } %>
     </div>
 
@@ -73,7 +81,24 @@
         <h3>Your Cart</h3>
         <div id="cartItems" class="cart-items"><p class="empty-cart">Cart is empty</p></div>
         <div class="cart-total"><strong>Total: ₦<span id="cartTotal">0</span></strong></div>
-        <button class="btn btn-primary btn-block" onclick="openOrderModal()" id="checkoutBtn" disabled>Place Order</button>
+
+        <form action="/customer/place-order" method="POST" id="desktopOrderForm">
+            <input type="hidden" name="vendor_id" value="<%= vendor.id %>">
+            <input type="hidden" name="cart_items" id="cartInputDesktop">
+            <div class="form-group">
+                <label>Delivery Hostel *</label>
+                <input type="text" name="delivery_hostel" value="<%= user.hostel || '' %>" required placeholder="e.g. A Block">
+            </div>
+            <div class="form-group">
+                <label>Detailed Address</label>
+                <textarea name="delivery_address" rows="2" placeholder="Room number, floor, etc."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <textarea name="notes" rows="2" placeholder="Any special requests?"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="checkoutBtn" disabled>Place Order</button>
+        </form>
     </div>
     <% } else { %>
     <div class="guest-cta-card">
@@ -86,6 +111,7 @@
     <% } %>
 </div>
 
+<!-- Mobile checkout: same cart + delivery details, presented as an overlay so it never requires scrolling past the menu -->
 <% if (isCustomerUser) { %>
 <div id="orderModal" class="modal" style="display:none;">
     <div class="modal-content">
@@ -148,6 +174,19 @@
                 parseFloat(this.dataset.price),
                 this
             );
+        });
+    });
+
+    // ===== Category filter tabs =====
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const category = this.dataset.category;
+            document.querySelectorAll('.food-card').forEach(card => {
+                const matches = category === 'all' || card.dataset.category === category;
+                card.classList.toggle('hidden-by-filter', !matches);
+            });
         });
     });
 
