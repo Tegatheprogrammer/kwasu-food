@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50) NOT NULL,
-    image_url VARCHAR(255) DEFAULT NULL,
+    image_url MEDIUMTEXT DEFAULT NULL,
     is_available TINYINT(1) NOT NULL DEFAULT 1,
     stock_status ENUM('in_stock','almost_sold','sold_out','restocked') DEFAULT 'in_stock',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
 CREATE TABLE IF NOT EXISTS menu_item_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
     menu_item_id INT NOT NULL,
-    image_url VARCHAR(255) NOT NULL,
+    image_url MEDIUMTEXT NOT NULL,
     position TINYINT NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE

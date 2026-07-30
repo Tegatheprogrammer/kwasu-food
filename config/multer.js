@@ -1,22 +1,11 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Create upload directories if they don't exist
-const uploadDir = path.join(__dirname, '..', 'public', 'uploads', 'food');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'food-' + unique + path.extname(file.originalname));
-    }
-});
+// Images are kept in memory just long enough to convert them to a base64
+// data URI (see uploadMenuImage in vendorController.js) and store them in the
+// database directly. Writing them to disk isn't reliable here because the
+// app's filesystem is ephemeral on the hosting platform - uploaded files get
+// wiped on every redeploy while the database keeps pointing at them.
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
