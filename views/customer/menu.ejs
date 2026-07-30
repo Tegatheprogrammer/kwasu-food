@@ -97,6 +97,19 @@
                 <label>Notes (optional)</label>
                 <textarea name="notes" rows="2" placeholder="Any special requests?"></textarea>
             </div>
+            <div class="form-group">
+                <label>Payment Method *</label>
+                <div class="payment-options">
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="cash" checked>
+                        <span>💵 Cash on Delivery</span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="card">
+                        <span>💳 Pay Online (Demo)</span>
+                    </label>
+                </div>
+            </div>
             <button type="submit" class="btn btn-primary btn-block" id="checkoutBtn" disabled>Place Order</button>
         </form>
     </div>
@@ -131,6 +144,19 @@
             <div class="form-group">
                 <label>Notes (optional)</label>
                 <textarea name="notes" rows="2" placeholder="Any special requests?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Payment Method *</label>
+                <div class="payment-options">
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="cash" checked>
+                        <span>💵 Cash on Delivery</span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="card">
+                        <span>💳 Pay Online (Demo)</span>
+                    </label>
+                </div>
             </div>
             <div class="order-summary">
                 <h4>Order Summary</h4>

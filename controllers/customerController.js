@@ -149,6 +149,7 @@ const placeOrder = async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { vendor_id, delivery_hostel, delivery_address, notes, cart_items } = req.body;
+        const paymentMethod = req.body.payment_method === 'card' ? 'card' : 'cash';
 
         if (!cart_items || cart_items.length === 0) {
             req.flash('error', 'Your cart is empty');
@@ -171,9 +172,9 @@ const placeOrder = async (req, res) => {
 
         // Create order
         const [orderResult] = await db.execute(
-            `INSERT INTO orders (customer_id, vendor_id, delivery_hostel, delivery_address, total_amount, notes)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [userId, vendor_id, delivery_hostel, delivery_address || null, totalAmount, notes || null]
+            `INSERT INTO orders (customer_id, vendor_id, delivery_hostel, delivery_address, total_amount, notes, payment_method)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [userId, vendor_id, delivery_hostel, delivery_address || null, totalAmount, notes || null, paymentMethod]
         );
 
         const orderId = orderResult.insertId;
@@ -200,12 +201,87 @@ const placeOrder = async (req, res) => {
             [`New order #${orderId} received!`, vendor_id]
         );
 
+        if (paymentMethod === 'card') {
+            req.flash('success', 'Order created! Complete payment to confirm it.');
+            return res.redirect(`/customer/payment/${orderId}`);
+        }
+
         req.flash('success', 'Order placed successfully!');
         res.redirect(`/customer/orders/${orderId}`);
     } catch (error) {
         console.error('Place order error:', error);
         req.flash('error', 'Failed to place order');
         res.redirect('/customer/vendors');
+    }
+};
+
+// GET - Demo Payment Page (no real gateway - for project demo purposes only)
+const getPaymentPage = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const orderId = req.params.orderId;
+
+        const [orders] = await db.execute(
+            `SELECT o.*, v.shop_name FROM orders o
+             JOIN vendors v ON o.vendor_id = v.id
+             WHERE o.id = ? AND o.customer_id = ?`,
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            req.flash('error', 'Order not found');
+            return res.redirect('/customer/orders');
+        }
+
+        if (orders[0].payment_status === 'paid') {
+            req.flash('success', 'This order has already been paid for');
+            return res.redirect(`/customer/orders/${orderId}`);
+        }
+
+        res.render('customer/payment', {
+            title: `Pay for Order #${orderId} - KWASU Food`,
+            order: orders[0]
+        });
+    } catch (error) {
+        console.error('Payment page error:', error);
+        req.flash('error', 'Failed to load payment page');
+        res.redirect('/customer/orders');
+    }
+};
+
+// POST - Confirm Demo Payment (simulated - marks the order paid, no real money moves)
+const confirmPayment = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const orderId = req.params.orderId;
+
+        const [orders] = await db.execute(
+            'SELECT id, payment_status FROM orders WHERE id = ? AND customer_id = ?',
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            req.flash('error', 'Order not found');
+            return res.redirect('/customer/orders');
+        }
+
+        if (orders[0].payment_status === 'paid') {
+            req.flash('success', 'This order has already been paid for');
+            return res.redirect(`/customer/orders/${orderId}`);
+        }
+
+        const reference = `DEMO-${orderId}-${Date.now()}`;
+        await db.execute(
+            `UPDATE orders SET payment_status = 'paid', payment_reference = ? WHERE id = ?`,
+            [reference, orderId]
+        );
+
+        req.flash('success', 'Payment successful! Your order is confirmed.');
+        res.redirect(`/customer/orders/${orderId}`);
+    } catch (error) {
+        console.error('Confirm payment error:', error);
+        req.flash('error', 'Payment failed. Please try again.');
+        res.redirect(`/customer/payment/${req.params.orderId}`);
     }
 };
 
@@ -421,6 +497,8 @@ module.exports = {
     getVendors,
     getMenu,
     placeOrder,
+    getPaymentPage,
+    confirmPayment,
     getOrders,
     getOrderDetail,
     getOrderStatus,
