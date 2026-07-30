@@ -28,6 +28,10 @@
     });
 })();
 
+// Image fallback helpers (foodImgError, galleryImgError) live in an inline
+// <script> in header.ejs instead of here - a broken image's error event can
+// fire before this file (loaded at the bottom of the page) has run.
+
 // ==================== CART FUNCTIONALITY ====================
 let cart = JSON.parse(localStorage.getItem('kwasu_cart')) || [];
 

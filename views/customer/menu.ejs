@@ -38,7 +38,7 @@
                     <div class="food-card-media">
                         <% if (images) { %>
                             <button type="button" class="food-card-image gallery-trigger" data-images='<%- JSON.stringify(images) %>' data-title="<%= item.name %>" aria-label="View photos of <%= item.name %>">
-                                <img src="<%= images[0] %>" alt="<%= item.name %>">
+                                <img src="<%= images[0] %>" alt="<%= item.name %>" onerror="foodImgError(this)">
                                 <% if (images.length > 1) { %><span class="gallery-count">+<%= images.length - 1 %></span><% } %>
                             </button>
                         <% } else { %>
@@ -176,7 +176,7 @@
         <h2 id="galleryTitle"></h2>
         <div class="gallery-viewer">
             <button type="button" class="gallery-nav gallery-prev" onclick="galleryStep(-1)" aria-label="Previous photo">&lsaquo;</button>
-            <img id="galleryImage" alt="">
+            <img id="galleryImage" alt="" onerror="galleryImgError(this)">
             <button type="button" class="gallery-nav gallery-next" onclick="galleryStep(1)" aria-label="Next photo">&rsaquo;</button>
         </div>
         <p class="gallery-counter"><span id="galleryPos">1</span> / <span id="galleryTotal">1</span></p>

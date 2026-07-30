@@ -9,6 +9,31 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <script>
+        // Defined here (not in main.js, loaded at the bottom of the page) because
+        // a broken image's error event can fire while the page is still parsing,
+        // before a script tag further down the page would have run.
+        function foodImgError(img) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'food-image-placeholder';
+            placeholder.style.width = (img.offsetWidth || img.clientWidth || 0) + 'px';
+            placeholder.style.height = (img.offsetHeight || img.clientHeight || 0) + 'px';
+            placeholder.innerHTML = '<span>🍽</span>';
+            img.replaceWith(placeholder);
+        }
+
+        const GALLERY_FALLBACK_SRC = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220">' +
+            '<rect width="100%" height="100%" fill="#eef1f0"/>' +
+            '<text x="50%" y="50%" font-size="16" fill="#64748b" text-anchor="middle" dy=".3em">Photo unavailable</text>' +
+            '</svg>'
+        );
+
+        function galleryImgError(img) {
+            img.onerror = null;
+            img.src = GALLERY_FALLBACK_SRC;
+        }
+    </script>
 </head>
 <body>
     <%- include('navbar') %>
