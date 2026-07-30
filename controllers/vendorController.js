@@ -504,7 +504,10 @@ const uploadMenuImage = async (req, res) => {
             return res.status(400).json({ success: false, error: 'No image uploaded' });
         }
 
-        const imageUrl = '/uploads/food/' + req.file.filename;
+        // Stored as a base64 data URI directly in the database rather than on disk -
+        // the app's filesystem is ephemeral on the hosting platform, so files written
+        // to disk get wiped on every redeploy while the database keeps pointing at them.
+        const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
         res.json({ success: true, imageUrl });
     } catch (error) {
         console.error('Upload error:', error);
