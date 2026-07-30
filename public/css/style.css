@@ -777,6 +777,11 @@ button.food-card-image { cursor: pointer; }
 }
 
 .gallery-viewer img {
+    /* min-width: 0 lets the image actually shrink to fit - without it, a flex
+       item's default min-width:auto keeps it at its natural size, which was
+       pushing the prev/next buttons outside the visible modal on narrow
+       screens or with larger source photos */
+    min-width: 0;
     max-width: 100%;
     max-height: 60vh;
     border-radius: 12px;
@@ -902,6 +907,7 @@ button.food-card-image { cursor: pointer; }
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
 }
 
