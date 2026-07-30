@@ -15,5 +15,8 @@ const fileFilter = (req, file, cb) => {
 module.exports = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+    // Kept modest since each image is stored as base64 in the database (~33%
+    // larger than the raw file) - this stays safely under conservative
+    // max_allowed_packet defaults on managed MySQL hosts
+    limits: { fileSize: 2 * 1024 * 1024 } // 2MB
 });
