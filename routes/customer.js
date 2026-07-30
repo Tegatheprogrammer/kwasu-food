@@ -20,6 +20,10 @@ router.get('/orders', isCustomer, customerController.getOrders);
 router.get('/orders/:id', isCustomer, customerController.getOrderDetail);
 router.get('/orders/:id/status', isCustomer, customerController.getOrderStatus);
 
+// Demo payment gateway (no real money moves - for project demo purposes only)
+router.get('/payment/:orderId', isCustomer, customerController.getPaymentPage);
+router.post('/payment/:orderId/pay', isCustomer, customerController.confirmPayment);
+
 // TAM Survey
 router.get('/tam-survey', isCustomer, customerController.getTamSurvey);
 router.post('/tam-survey', isCustomer, customerController.postTamSurvey);

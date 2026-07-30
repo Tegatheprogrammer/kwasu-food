@@ -16,7 +16,16 @@
         <% if (order.notes) { %><p><strong>Notes:</strong> <%= order.notes %></p><% } %>
         <p><strong>Ordered:</strong> <%= new Date(order.created_at).toLocaleString() %></p>
         <p><strong>Last Updated:</strong> <span id="lastUpdated"><%= new Date(order.updated_at).toLocaleString() %></span></p>
-        
+        <p>
+            <strong>Payment:</strong>
+            <%= order.payment_method === 'card' ? 'Online (Demo)' : 'Cash on Delivery' %>
+            <span class="badge <%= order.payment_status === 'paid' ? 'badge-success' : 'badge-warning' %>"><%= order.payment_status === 'paid' ? 'Paid' : 'Unpaid' %></span>
+        </p>
+        <% if (order.payment_reference) { %><p><strong>Reference:</strong> <%= order.payment_reference %></p><% } %>
+        <% if (order.payment_method === 'card' && order.payment_status !== 'paid') { %>
+            <a href="/customer/payment/<%= order.id %>" class="btn btn-primary btn-small" style="margin-top: 0.5rem;">Complete Payment</a>
+        <% } %>
+
         <% if (order.rider_name) { %>
             <div style="background: #f0fff0; padding: 15px; border-radius: 8px; margin-top: 15px;">
                 <h4 style="margin-bottom: 10px;">🛵 Rider Info</h4>

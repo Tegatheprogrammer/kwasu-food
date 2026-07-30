@@ -17,6 +17,7 @@
                 <th>Phone</th>
                 <th>Amount</th>
                 <th>Delivery</th>
+                <th>Payment</th>
                 <th>Status</th>
                 <th>Rider</th>
                 <th>Date</th>
@@ -34,6 +35,10 @@
                     <% if (order.delivery_fee > 0) { %>
                         ₦<%= order.delivery_fee %>
                     <% } else { %>-<% } %>
+                </td>
+                <td>
+                    <span class="badge <%= order.payment_status === 'paid' ? 'badge-success' : 'badge-warning' %>"><%= order.payment_status === 'paid' ? 'Paid' : 'Unpaid' %></span>
+                    <small style="display:block; color: var(--gray);"><%= order.payment_method === 'card' ? 'Online' : 'Cash' %></small>
                 </td>
                 <td><span class="status-badge status-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
                 <td>

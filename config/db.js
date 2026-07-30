@@ -16,7 +16,20 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Test connection, then make sure tables added after initial setup exist
+// Add a column to a table if it doesn't already exist (works across MySQL/MariaDB
+// versions that don't all support "ADD COLUMN IF NOT EXISTS")
+const ensureColumn = async (table, column, definition) => {
+    const [rows] = await pool.execute(
+        `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+        [table, column]
+    );
+    if (rows.length === 0) {
+        await pool.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+};
+
+// Test connection, then make sure schema changes added after initial setup exist
 // (schema.sql is not re-run automatically against deployed databases)
 pool.getConnection()
     .then(async (connection) => {
@@ -35,6 +48,14 @@ pool.getConnection()
             `);
         } catch (err) {
             console.error('\u274C Failed to ensure menu_item_images table exists:', err.message);
+        }
+
+        try {
+            await ensureColumn('orders', 'payment_method', "ENUM('cash','card') NOT NULL DEFAULT 'cash'");
+            await ensureColumn('orders', 'payment_status', "ENUM('unpaid','paid') NOT NULL DEFAULT 'unpaid'");
+            await ensureColumn('orders', 'payment_reference', 'VARCHAR(100) DEFAULT NULL');
+        } catch (err) {
+            console.error('\u274C Failed to ensure payment columns exist on orders:', err.message);
         }
     })
     .catch(err => {
