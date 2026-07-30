@@ -12,8 +12,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// Menu item photos are submitted as base64 data URIs in regular form fields
+// (up to 5 per item, each up to ~5MB before encoding), which blows past
+// Express's default 100kb body limit - raise it generously here.
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Session configuration

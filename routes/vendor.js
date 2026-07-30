@@ -23,7 +23,17 @@ const upload = require('../config/multer'); // ADD THIS
 router.get('/orders', isVendor, vendorController.getOrders);
 router.post('/orders/:id/status', isVendor, vendorController.updateOrderStatus);
 // ADD THIS - Image upload route
-router.post('/menu/upload-image', isVendor, upload.single('food_image'), vendorController.uploadMenuImage);
+router.post('/menu/upload-image', isVendor, (req, res, next) => {
+    upload.single('food_image')(req, res, (err) => {
+        if (err) {
+            const message = err.code === 'LIMIT_FILE_SIZE'
+                ? 'Image must be smaller than 2MB'
+                : err.message || 'Upload failed';
+            return res.status(400).json({ success: false, error: message });
+        }
+        next();
+    });
+}, vendorController.uploadMenuImage);
 
 // Rider selection (NEW)
 router.get('/select-rider/:id', isVendor, vendorController.getSelectRider);
