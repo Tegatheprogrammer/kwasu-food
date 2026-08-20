@@ -7,13 +7,18 @@ require('dotenv').config();
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,  
+    port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'kwasu_food',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    // Helps avoid idle pooled connections getting silently dropped by the
+    // database host or a network proxy in between (a common cause of
+    // "Connection lost: The server closed the connection")
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 });
 
 // Add a column to a table if it doesn't already exist (works across MySQL/MariaDB
@@ -42,12 +47,20 @@ const ensureColumnType = async (table, column, dataType, definition) => {
     }
 };
 
-// Test connection, then make sure schema changes added after initial setup exist
-// (schema.sql is not re-run automatically against deployed databases)
-pool.getConnection()
-    .then(async (connection) => {
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Connect and run the one-time schema migrations, retrying with backoff.
+// This matters because the app can start up faster than a sleeping/restarting
+// database host wakes up (e.g. a free-tier DB), so the very first connection
+// attempt can fail with "Connection lost" even though the DB is fine seconds
+// later. Without a retry here, that race would silently skip these
+// migrations for the entire lifetime of the process.
+const connectWithRetry = async (attempt = 1, maxAttempts = 6) => {
+    try {
+        const connection = await pool.getConnection();
         console.log('\u2705 Database connected successfully');
         connection.release();
+
         try {
             await pool.execute(`
                 CREATE TABLE IF NOT EXISTS menu_item_images (
@@ -80,9 +93,17 @@ pool.getConnection()
         } catch (err) {
             console.error('\u274C Failed to widen image_url columns:', err.message);
         }
-    })
-    .catch(err => {
-        console.error('\u274C Database connection failed:', err.message);
-    });
+    } catch (err) {
+        console.error(`\u274C Database connection failed (attempt ${attempt}/${maxAttempts}):`, err.message);
+        if (attempt < maxAttempts) {
+            const delayMs = Math.min(2000 * attempt, 10000);
+            await sleep(delayMs);
+            return connectWithRetry(attempt + 1, maxAttempts);
+        }
+        console.error('\u274C Giving up on the startup DB connection after repeated failures. Individual requests will still retry their own connections once the database is reachable.');
+    }
+};
+
+connectWithRetry();
 
 module.exports = pool;
